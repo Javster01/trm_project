@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TRM Predictor</title>
+</head>
+<body>
+    <h1>Predicción TRM</h1>
+    <button onclick="getPrediction()">Predecir</button>
+
+    <pre id="result"></pre>
+
+    <script>
+        function getPrediction() {
+            fetch("/predict")
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById("result").innerText = JSON.stringify(data, null, 2);
+            });
+        }
+    </script>
+</body>
+</html>
