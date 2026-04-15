@@ -1,0 +1,26 @@
+<div class="card">
+    <h3>Datos cargados</h3>
+    <div id="dataMeta" class="meta">Total de registros cargados: {{ initial_count }}</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>TRM</th>
+            </tr>
+        </thead>
+        <tbody id="dataTableBody">
+            {% if initial_rows and initial_rows|length > 0 %}
+                {% for row in initial_rows %}
+                <tr>
+                    <td>{{ row.date }}</td>
+                    <td>{{ row.trm_display }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="2" class="meta">No se encontraron datos cargados.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>

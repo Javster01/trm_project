@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Predicción | TRM Predictor{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="page-container" data-page="prediction">
+    {% include 'partials/_top_nav.html' %}
+
+    <section class="hero">
+        <h1>Predicción TRM</h1>
+        <p class="meta">Ejecuta predicción y revisa resumen estadístico base.</p>
+        <div class="actions">
+            <button class="btn btn-primary" onclick="getPrediction()">Predecir</button>
+        </div>
+    </section>
+
+    <div class="card">
+        <h3>Resumen inicial</h3>
+        <pre id="initialAnalysis">{{ initial_analysis | tojson(indent=2) }}</pre>
+    </div>
+
+    {% include 'partials/_prediction_result.html' %}
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+{% endblock %}

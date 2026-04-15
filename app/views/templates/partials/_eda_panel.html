@@ -1,0 +1,111 @@
+<div class="card" id="edaCard">
+    <h3>EDA (Exploratory Data Analysis)</h3>
+    <div id="edaMeta" class="meta">
+        Rango: {{ initial_eda.meta.start_date }} a {{ initial_eda.meta.end_date }} · Registros: {{ initial_eda.meta.count }}
+    </div>
+    <div id="edaStats" class="stats-grid">
+        <div class="stat-item">
+            <span class="stat-label">Media</span>
+            <strong class="stat-value">{{ initial_eda_summary.descriptive.mean }}</strong>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Desv. estándar</span>
+            <strong class="stat-value">{{ initial_eda_summary.descriptive.std }}</strong>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Tendencia</span>
+            <strong class="stat-value">{{ initial_eda_summary.trend.direction }}</strong>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Outliers</span>
+            <strong class="stat-value">{{ initial_eda_summary.outliers.count }}</strong>
+        </div>
+    </div>
+
+    <div class="eda-visual-grid">
+        <div class="sub-card" id="edaTrendCard">
+            <h4>Tendencia reciente (promedio mensual)</h4>
+            <div id="edaSparkline" class="sparkline-wrap"></div>
+            <div id="edaTrendMeta" class="meta">
+                Dirección: {{ initial_eda_summary.trend.direction }} · Cambio: {{ initial_eda_summary.trend.percent_change }}
+            </div>
+        </div>
+
+        <div class="sub-card" id="edaLatestCard">
+            <h4>Último dato</h4>
+            <div class="latest-grid">
+                <div>
+                    <span class="stat-label">Fecha</span>
+                    <strong class="stat-value" id="latestDate">{{ initial_eda_summary.latest.date }}</strong>
+                </div>
+                <div>
+                    <span class="stat-label">Valor</span>
+                    <strong class="stat-value" id="latestValue">{{ initial_eda_summary.latest.value }}</strong>
+                </div>
+                <div>
+                    <span class="stat-label">Fecha anterior</span>
+                    <strong class="stat-value" id="latestPrevDate">{{ initial_eda_summary.latest.prev_date }}</strong>
+                </div>
+                <div>
+                    <span class="stat-label">Delta</span>
+                    <strong class="stat-value" id="latestDelta">{{ initial_eda_summary.latest.delta }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="eda-table-grid">
+        <div class="sub-card">
+            <h4>Resumen mensual (últimos 6)</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Periodo</th>
+                        <th>Promedio</th>
+                        <th>Mínimo</th>
+                        <th>Máximo</th>
+                    </tr>
+                </thead>
+                <tbody id="monthlySummaryBody">
+                    {% for m in initial_eda.monthly_summary[-6:] %}
+                    <tr>
+                        <td>{{ m.period }}</td>
+                        <td>{{ "$%.2f"|format(m.avg) }}</td>
+                        <td>{{ "$%.2f"|format(m.min) }}</td>
+                        <td>{{ "$%.2f"|format(m.max) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="sub-card">
+            <h4>Resumen anual</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Año</th>
+                        <th>Promedio</th>
+                        <th>Mínimo</th>
+                        <th>Máximo</th>
+                    </tr>
+                </thead>
+                <tbody id="yearlySummaryBody">
+                    {% for y in initial_eda.yearly_summary %}
+                    <tr>
+                        <td>{{ y.year }}</td>
+                        <td>{{ "$%.2f"|format(y.avg) }}</td>
+                        <td>{{ "$%.2f"|format(y.min) }}</td>
+                        <td>{{ "$%.2f"|format(y.max) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <details class="raw-detail">
+        <summary>Ver detalle técnico (JSON)</summary>
+        <pre id="edaResult">{{ initial_eda_summary | tojson(indent=2) }}</pre>
+    </details>
+</div>

@@ -60,3 +60,30 @@ La aplicación estará disponible en `http://localhost:5000`
 
 Accede a `http://localhost:5000` en tu navegador para ver la interfaz de predicción del TRM.
 
+
+## Carpeta de datos
+
+Coloca tus archivos CSV con la TRM en la carpeta `app/data/raw/` (creada por el proyecto).
+
+El cargador `load_trm_data()` buscará automáticamente en estas rutas (en este orden):
+
+- la ruta que se le pase explícitamente a `load_trm_data(path)`;
+- `app/data/raw/TRM_20260413.csv`;
+- `app/data/TRM_20260413.csv`;
+- `~/Downloads/TRM_20260413.csv`;
+- `./TRM_20260413.csv` (raíz del repo).
+
+Ejemplo: copia el CSV al proyecto:
+
+```bash
+cp ~/Downloads/TRM_20260413.csv app/data/raw/
+```
+
+O prueba la carga desde Python pasando la ruta completa:
+
+```python
+from app.models.data_loader import load_trm_data
+vals = load_trm_data('/Users/tu_usuario/Downloads/TRM_20260413.csv')
+print(vals[:10])
+```
+

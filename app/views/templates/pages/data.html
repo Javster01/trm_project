@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Datos | TRM Predictor{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="page-container" data-page="data">
+    {% include 'partials/_top_nav.html' %}
+
+    <section class="hero">
+        <h1>Datos TRM</h1>
+        <p class="meta">Visualiza y refresca los datos cargados desde el data loader.</p>
+        <div class="actions">
+            <button class="btn btn-secondary" onclick="loadData()">Actualizar datos</button>
+        </div>
+    </section>
+
+    {% include 'partials/_data_table.html' %}
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+{% endblock %}

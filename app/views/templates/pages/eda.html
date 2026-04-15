@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}EDA | TRM Predictor{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="page-container" data-page="eda">
+    {% include 'partials/_top_nav.html' %}
+
+    <section class="hero">
+        <h1>Análisis Exploratorio (EDA)</h1>
+        <p class="meta">Revisa métricas, tendencia y resúmenes temporalmente agregados.</p>
+        <div class="actions">
+            <button class="btn btn-secondary" onclick="loadEda(true)">Actualizar EDA</button>
+        </div>
+    </section>
+
+    {% include 'partials/_eda_panel.html' %}
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+{% endblock %}

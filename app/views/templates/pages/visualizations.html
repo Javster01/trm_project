@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Visualizaciones | TRM Predictor{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="page-container" data-page="visualizations">
+    {% include 'partials/_top_nav.html' %}
+
+    <section class="hero">
+        <h1>Visualizaciones TRM</h1>
+        <p class="meta">Comportamiento de la TRM en los últimos 36 meses.</p>
+    </section>
+
+    <section class="stats-grid">
+        <div class="stat-item">
+            <span class="stat-label">Meses analizados</span>
+            <strong class="stat-value">{{ visual.count_months }}</strong>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Periodo inicio</span>
+            <strong class="stat-value">{{ visual.start_period or '-' }}</strong>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Periodo fin</span>
+            <strong class="stat-value">{{ visual.end_period or '-' }}</strong>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Último promedio mensual</span>
+            <strong class="stat-value">{{ latest_avg_display }}</strong>
+        </div>
+    </section>
+
+    <div class="card">
+        <h3>Tendencia mensual promedio (36 meses)</h3>
+        <div class="chart-wrap">{{ visual.line_svg | safe }}</div>
+    </div>
+
+    <div class="card">
+        <h3>Promedio mensual vs media móvil (3M)</h3>
+        <div class="chart-wrap">{{ visual.moving_avg_svg | safe }}</div>
+    </div>
+
+    <div class="card">
+        <h3>Variación mensual (mes contra mes)</h3>
+        <div class="chart-wrap">{{ visual.change_svg | safe }}</div>
+    </div>
+
+    <div class="card">
+        <h3>Índice base 100 y suavizado</h3>
+        <div class="chart-wrap">{{ visual.index_base_svg | safe }}</div>
+    </div>
+
+    <div class="card">
+        <h3>Estacionalidad mensual (promedio por mes calendario)</h3>
+        <div class="chart-wrap">{{ visual.seasonality_svg | safe }}</div>
+    </div>
+
+    <div class="card">
+        <h3>Distribución de promedios mensuales</h3>
+        <div class="chart-wrap">{{ visual.distribution_svg | safe }}</div>
+    </div>
+
+    <div class="card">
+        <h3>Serie mensual (últimos 36)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Periodo</th>
+                    <th>Promedio TRM</th>
+                    <th>Δ mensual</th>
+                    <th>% mensual</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in visual.series %}
+                <tr>
+                    <td>{{ row.period }}</td>
+                    <td>{{ "$%.2f"|format(row.avg) }}</td>
+                    <td>{% if row.change_abs is not none %}{{ "$%.2f"|format(row.change_abs) }}{% else %}-{% endif %}</td>
+                    <td>{% if row.change_pct is not none %}{{ "%.2f%%"|format(row.change_pct) }}{% else %}-{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</main>
+{% endblock %}

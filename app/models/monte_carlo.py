@@ -4,7 +4,8 @@ from .data_loader import load_trm_data
 
 
 def simulate_trm(n=10):
-    values = load_trm_data()
+    records = load_trm_data()
+    values = [item["trm"] for item in records]
     mean = sum(values) / len(values)
     variance = sum((x - mean) ** 2 for x in values) / len(values)
     std = variance ** 0.5
