@@ -15,16 +15,28 @@
             <span class="hero-kicker">Exploración estadística</span>
             <h1>Análisis Exploratorio (EDA)</h1>
             <p class="meta">Consulta tendencias, distribución y señales de volatilidad en una vista consolidada.</p>
+            <div class="actions compact-actions eda-view-switch" role="tablist" aria-label="Selector de vista EDA">
+                <button class="btn btn-primary is-active" id="showEdaAllBtn" type="button" role="tab" aria-selected="true">Todos los datos</button>
+                <button class="btn btn-secondary" id="showEda36mBtn" type="button" role="tab" aria-selected="false">Últimos 36 meses</button>
+            </div>
         </div>
         <div class="hero-panel">
             <p class="meta">Sincroniza métricas y resumen técnico con la fuente más reciente.</p>
             <div class="actions compact-actions">
-                <button class="btn btn-secondary" onclick="loadEda(true)">Actualizar EDA</button>
+                <button class="btn btn-secondary" onclick="loadEda(true, true)">Actualizar EDA</button>
             </div>
         </div>
     </section>
 
-    {% include 'partials/_eda_panel.html' %}
+    <section id="edaViewAll" class="eda-view-panel" aria-labelledby="showEdaAllBtn">
+        {% include 'partials/_eda_panel.html' %}
+    </section>
+
+    <section id="edaView36m" class="card eda-view-panel is-hidden" style="margin-top: 1rem;" aria-labelledby="showEda36mBtn">
+        <h3>EDA últimos 36 meses</h3>
+        <p class="meta">Este bloque muestra únicamente el análisis de la ventana reciente de 36 meses.</p>
+        {% include 'partials/_eda_panel_36m.html' %}
+    </section>
 </main>
 {% endblock %}
 

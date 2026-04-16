@@ -10,6 +10,8 @@ const pctFormatter = new Intl.NumberFormat("en-US", {
 
 let cachedRowsPromise = null;
 let allRowsCache = [];
+let predictionDashboardState = null;
+let predictionScopeState = "all_data";
 
 function formatTrm(value) {
     if (value === null || value === undefined || Number.isNaN(Number(value))) {
@@ -87,7 +89,7 @@ function renderBacktestChart(containerId, series) {
         return;
     }
 
-    const width = 1180;
+    const width = Math.max(1180, Math.floor((container.clientWidth || 1180) - 2));
     const height = 320;
     const padL = 48;
     const padR = 20;
@@ -167,7 +169,7 @@ function renderForecastComparisonChart(containerId, historySeries, rfProjection,
         return;
     }
 
-    const width = 1180;
+    const width = Math.max(1180, Math.floor((container.clientWidth || 1180) - 2));
     const height = 320;
     const padL = 48;
     const padR = 24;
@@ -251,7 +253,7 @@ function renderMonteCarloHistogram(containerId, scenarios, rfProjection, mcProje
         return;
     }
 
-    const width = 1180;
+    const width = Math.max(1180, Math.floor((container.clientWidth || 1180) - 2));
     const height = 320;
     const padL = 48;
     const padR = 22;
@@ -348,15 +350,75 @@ function renderFeatureImportance(containerId, featureImportance) {
     `).join("");
 }
 
-function renderPredictionDashboard(data) {
-    const rf = data.random_forest || {};
-    const mc = data.monte_carlo || {};
-    const comparison = data.comparison || {};
-    const mlflow = data.mlflow || {};
-    const history = (data.history && data.history.series) ? data.history.series : [];
+function normalizePredictionScopes(data) {
+    if (data?.scopes && Object.keys(data.scopes).length) {
+        return data.scopes;
+    }
+
+    return {
+        all_data: {
+            scope: {
+                key: "all_data",
+                label: "Todos los datos",
+                records_count: null,
+            },
+            history: data?.history || { series: [] },
+            random_forest: data?.random_forest || {},
+            monte_carlo: data?.monte_carlo || {},
+            comparison: data?.comparison || {},
+            recommendation: data?.recommendation || "Modelos calculados.",
+        },
+    };
+}
+
+function updatePredictionScopeButtons(activeScope) {
+    const allBtn = document.getElementById("predictionScopeAllBtn");
+    const m36Btn = document.getElementById("predictionScope36mBtn");
+    const isAll = activeScope === "all_data";
+
+    if (allBtn) {
+        allBtn.classList.toggle("is-active", isAll);
+        allBtn.classList.toggle("btn-primary", isAll);
+        allBtn.classList.toggle("btn-secondary", !isAll);
+        allBtn.setAttribute("aria-selected", isAll ? "true" : "false");
+    }
+
+    if (m36Btn) {
+        m36Btn.classList.toggle("is-active", !isAll);
+        m36Btn.classList.toggle("btn-primary", !isAll);
+        m36Btn.classList.toggle("btn-secondary", isAll);
+        m36Btn.setAttribute("aria-selected", !isAll ? "true" : "false");
+    }
+}
+
+function renderPredictionScope(scopeData, mlflow) {
+    const rf = scopeData?.random_forest || {};
+    const mc = scopeData?.monte_carlo || {};
+    const comparison = scopeData?.comparison || {};
+    const history = (scopeData?.history && scopeData.history.series) ? scopeData.history.series : [];
     const historySeries = history.slice(-12);
+    const rfForecastData = rf?.forecast || {};
     const rfForecast = Number(comparison.rf_forecast ?? rf?.forecast?.next_month_projection ?? 0);
     const mcProjection = Number(comparison.mc_projection ?? mc?.projection_next_month ?? 0);
+    const rfNextDayProjection = Number(rfForecastData?.next_day_projection ?? 0);
+    const mcNextDayProjection = Number(mc?.projection_next_day ?? 0);
+    const rfNextDayDate = rfForecastData?.next_day_date || "-";
+    const mcNextDayDate = mc?.next_day_date || rfNextDayDate;
+    const todayTrm = Number(mc?.historical?.latest_value ?? historySeries[historySeries.length - 1]?.avg ?? 0);
+    const todayDate = scopeData?.scope?.end_date || "-";
+    const nextMonthStartDate = rfForecastData?.next_month_start || "";
+    let projectedNextMonthLabel = "-";
+    if (nextMonthStartDate) {
+        const dt = new Date(`${nextMonthStartDate}T00:00:00`);
+        if (!Number.isNaN(dt.getTime())) {
+            projectedNextMonthLabel = new Intl.DateTimeFormat("es-CO", {
+                month: "long",
+                year: "numeric",
+            }).format(dt);
+        } else {
+            projectedNextMonthLabel = String(nextMonthStartDate).slice(0, 7);
+        }
+    }
 
     const kpis = document.getElementById("predictionKpis");
     const status = document.getElementById("predictionStatus");
@@ -366,15 +428,20 @@ function renderPredictionDashboard(data) {
 
     if (kpis) {
         kpis.innerHTML = `
-            <div class="stat-item"><span class="stat-label">RF próximo mes</span><strong class="stat-value">${formatTrm(rfForecast)}</strong></div>
-            <div class="stat-item"><span class="stat-label">MC próximo mes</span><strong class="stat-value">${formatTrm(mcProjection)}</strong></div>
+            <div class="stat-item"><span class="stat-label">TRM hoy (${todayDate})</span><strong class="stat-value">${formatTrm(todayTrm)}</strong></div>
+            <div class="stat-item"><span class="stat-label">RF próximo mes (${projectedNextMonthLabel})</span><strong class="stat-value">${formatTrm(rfForecast)}</strong></div>
+            <div class="stat-item"><span class="stat-label">MC próximo mes (${projectedNextMonthLabel})</span><strong class="stat-value">${formatTrm(mcProjection)}</strong></div>
+            <div class="stat-item"><span class="stat-label">RF día siguiente (${rfNextDayDate})</span><strong class="stat-value">${formatTrm(rfNextDayProjection)}</strong></div>
+            <div class="stat-item"><span class="stat-label">MC día siguiente (${mcNextDayDate})</span><strong class="stat-value">${formatTrm(mcNextDayProjection)}</strong></div>
             <div class="stat-item"><span class="stat-label">Gap entre modelos</span><strong class="stat-value">${formatTrm(comparison.gap ?? 0)}</strong></div>
             <div class="stat-item"><span class="stat-label">Alineación</span><strong class="stat-value">${(Number(comparison.alignment_score || 0)).toFixed(1)}%</strong></div>
         `;
     }
 
     if (status) {
-        status.innerText = `✅ Predicción completada · MLflow: ${mlflow.experiment_name || '-'} · Escenarios: ${mc.scenario_count || mc.scenarios?.length || 0}`;
+        const scopeLabel = scopeData?.scope?.label || "Todos los datos";
+        const scopeRecords = scopeData?.scope?.records_count;
+        status.innerText = `✅ Predicción completada · Alcance: ${scopeLabel}${scopeRecords ? ` (${scopeRecords} registros)` : ""} · MLflow: ${mlflow?.experiment_name || '-'} · Escenarios: ${mc.scenario_count || mc.scenarios?.length || 0}`;
     }
 
     if (rfDetail) {
@@ -390,13 +457,33 @@ function renderPredictionDashboard(data) {
     }
 
     if (narrative) {
-        narrative.innerText = comparison.message || "Modelos calculados.";
+        narrative.innerText = comparison.message || scopeData?.recommendation || "Modelos calculados.";
     }
 
     renderBacktestChart("predictionRfChart", rf.test_series || []);
     renderFeatureImportance("predictionFeatureImportance", rf.feature_importance || {});
     renderMonteCarloHistogram("predictionMonteCarloChart", mc.scenarios || [], rfForecast, mcProjection, mc.percentiles || {});
     renderForecastComparisonChart("predictionComparisonChart", historySeries, rfForecast, mcProjection);
+}
+
+function setPredictionScope(scopeKey) {
+    predictionScopeState = scopeKey;
+    updatePredictionScopeButtons(scopeKey);
+
+    if (!predictionDashboardState) return;
+    const scopes = normalizePredictionScopes(predictionDashboardState);
+    const selectedScope = scopes[scopeKey] || scopes.all_data || Object.values(scopes)[0];
+    if (!selectedScope) return;
+
+    renderPredictionScope(selectedScope, predictionDashboardState.mlflow || {});
+}
+
+function renderPredictionDashboard(data) {
+    predictionDashboardState = data;
+    const scopes = normalizePredictionScopes(data);
+    const defaultScope = data?.default_scope || "all_data";
+    const selectedScope = scopes[predictionScopeState] ? predictionScopeState : defaultScope;
+    setPredictionScope(selectedScope);
 }
 
 function getPrediction() {
@@ -490,10 +577,14 @@ function applyDataFilters() {
     renderDataTable(filtered, filters.limit);
 }
 
-function loadData() {
+function loadData(forceRefresh = false) {
     const dataMeta = document.getElementById("dataMeta");
     if (dataMeta) {
         dataMeta.innerText = "Cargando datos...";
+    }
+
+    if (forceRefresh) {
+        cachedRowsPromise = null;
     }
 
     fetchAllRows()
@@ -688,23 +779,28 @@ function renderSparkline(summaryMonthly) {
         return;
     }
 
-    const width = 720;
-    const height = 170;
-    const pad = 18;
+    const width = Math.max(720, Math.floor((container.clientWidth || 720) - 2));
+    const height = Math.max(165, Math.min(220, Math.round(width * 0.2)));
     const min = Math.min(...values);
     const max = Math.max(...values);
     const range = max - min || 1;
+    const previewLabels = [max, max - 0.5 * range, min].map(v => formatTrm(v));
+    const maxLabelChars = Math.max(...previewLabels.map(label => String(label).length));
+    const padL = Math.min(96, Math.max(54, maxLabelChars * 7));
+    const padR = 16;
+    const padT = 18;
+    const padB = 18;
 
     const pointTuples = values.map((v, i) => {
-        const x = pad + (i * (width - pad * 2)) / (values.length - 1);
-        const y = pad + ((max - v) * (height - pad * 2)) / range;
+        const x = padL + (i * (width - padL - padR)) / (values.length - 1);
+        const y = padT + ((max - v) * (height - padT - padB)) / range;
         return { x, y, v, period: summaryMonthly[i].period };
     });
 
     const polyline = pointTuples.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ");
     const yTicks = [0, 0.5, 1].map(ratio => {
         const value = max - ratio * range;
-        const y = pad + ratio * (height - pad * 2);
+        const y = padT + ratio * (height - padT - padB);
         return { value, y };
     });
     const xTickLabels = pointTuples.map((p, idx) => ({ ...p, idx }))
@@ -712,11 +808,11 @@ function renderSparkline(summaryMonthly) {
 
     container.innerHTML = `
         <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="sparkline-svg" role="img" aria-label="Tendencia mensual TRM">
-            <line x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}" stroke="#64748b" stroke-width="1.2"></line>
-            <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${height - pad}" stroke="#64748b" stroke-width="1.2"></line>
+            <line x1="${padL}" y1="${height - padB}" x2="${width - padR}" y2="${height - padB}" stroke="#64748b" stroke-width="1.2"></line>
+            <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${height - padB}" stroke="#64748b" stroke-width="1.2"></line>
             ${yTicks.map(tick => `
-                <line x1="${pad - 4}" y1="${tick.y.toFixed(2)}" x2="${pad}" y2="${tick.y.toFixed(2)}" stroke="#64748b" stroke-width="1"></line>
-                <text x="${(pad - 8).toFixed(2)}" y="${(tick.y + 3).toFixed(2)}" fill="#64748b" font-size="9" text-anchor="end">${formatTrm(tick.value)}</text>
+                <line x1="${padL - 4}" y1="${tick.y.toFixed(2)}" x2="${padL}" y2="${tick.y.toFixed(2)}" stroke="#64748b" stroke-width="1"></line>
+                <text x="${(padL - 8).toFixed(2)}" y="${(tick.y + 3).toFixed(2)}" fill="#64748b" font-size="9" text-anchor="end">${formatTrm(tick.value)}</text>
             `).join("")}
             <polyline fill="none" stroke="#2563eb" stroke-width="2.8" points="${polyline}" />
             ${pointTuples.map((p, idx) => `
@@ -726,7 +822,81 @@ function renderSparkline(summaryMonthly) {
                 <circle class="interactive-hit-point" data-index="${idx}" cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="10" fill="transparent"></circle>
             `).join("")}
             ${xTickLabels.map(p => `
-                <line x1="${p.x.toFixed(2)}" y1="${(height - pad).toFixed(2)}" x2="${p.x.toFixed(2)}" y2="${(height - pad + 4).toFixed(2)}" stroke="#64748b" stroke-width="1"></line>
+                <line x1="${p.x.toFixed(2)}" y1="${(height - padB).toFixed(2)}" x2="${p.x.toFixed(2)}" y2="${(height - padB + 4).toFixed(2)}" stroke="#64748b" stroke-width="1"></line>
+                <text x="${p.x.toFixed(2)}" y="${(height - 4).toFixed(2)}" fill="#64748b" font-size="9" text-anchor="middle">${p.period}</text>
+            `).join("")}
+        </svg>
+    `;
+
+    const circles = container.querySelectorAll(".interactive-hit-point");
+    circles.forEach(circle => {
+        circle.addEventListener("click", () => {
+            const idx = Number(circle.dataset.index);
+            const point = pointTuples[idx];
+            if (!selectedPoint || !point) return;
+            selectedPoint.innerText = `Seleccionado ${point.period}: ${formatTrm(point.v)}`;
+        });
+    });
+}
+
+function renderSparklineInContainer(containerId, selectedPointId, summaryMonthly) {
+    const container = document.getElementById(containerId);
+    const selectedPoint = document.getElementById(selectedPointId);
+    if (!container) return;
+
+    const values = summaryMonthly.map(m => Number(m.avg));
+    if (values.length < 2) {
+        container.innerHTML = '<span class="meta">Datos insuficientes para gráfica.</span>';
+        if (selectedPoint) {
+            selectedPoint.innerText = "Selecciona un punto en la gráfica para ver detalle.";
+        }
+        return;
+    }
+
+    const width = Math.max(720, Math.floor((container.clientWidth || 720) - 2));
+    const height = Math.max(165, Math.min(220, Math.round(width * 0.2)));
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
+    const previewLabels = [max, max - 0.5 * range, min].map(v => formatTrm(v));
+    const maxLabelChars = Math.max(...previewLabels.map(label => String(label).length));
+    const padL = Math.min(96, Math.max(54, maxLabelChars * 7));
+    const padR = 16;
+    const padT = 18;
+    const padB = 18;
+
+    const pointTuples = values.map((v, i) => {
+        const x = padL + (i * (width - padL - padR)) / (values.length - 1);
+        const y = padT + ((max - v) * (height - padT - padB)) / range;
+        return { x, y, v, period: summaryMonthly[i].period };
+    });
+
+    const polyline = pointTuples.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ");
+    const yTicks = [0, 0.5, 1].map(ratio => {
+        const value = max - ratio * range;
+        const y = padT + ratio * (height - padT - padB);
+        return { value, y };
+    });
+    const xTickLabels = pointTuples.map((p, idx) => ({ ...p, idx }))
+        .filter(p => p.idx % 3 === 0 || p.idx === pointTuples.length - 1);
+
+    container.innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="sparkline-svg" role="img" aria-label="Tendencia mensual TRM">
+            <line x1="${padL}" y1="${height - padB}" x2="${width - padR}" y2="${height - padB}" stroke="#64748b" stroke-width="1.2"></line>
+            <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${height - padB}" stroke="#64748b" stroke-width="1.2"></line>
+            ${yTicks.map(tick => `
+                <line x1="${padL - 4}" y1="${tick.y.toFixed(2)}" x2="${padL}" y2="${tick.y.toFixed(2)}" stroke="#64748b" stroke-width="1"></line>
+                <text x="${(padL - 8).toFixed(2)}" y="${(tick.y + 3).toFixed(2)}" fill="#64748b" font-size="9" text-anchor="end">${formatTrm(tick.value)}</text>
+            `).join("")}
+            <polyline fill="none" stroke="#2563eb" stroke-width="2.8" points="${polyline}" />
+            ${pointTuples.map((p, idx) => `
+                <circle class="interactive-point" cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="4.2" fill="#1d4ed8" pointer-events="none">
+                    <title>${p.period}: ${formatTrm(p.v)}</title>
+                </circle>
+                <circle class="interactive-hit-point" data-index="${idx}" cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="10" fill="transparent"></circle>
+            `).join("")}
+            ${xTickLabels.map(p => `
+                <line x1="${p.x.toFixed(2)}" y1="${(height - padB).toFixed(2)}" x2="${p.x.toFixed(2)}" y2="${(height - padB + 4).toFixed(2)}" stroke="#64748b" stroke-width="1"></line>
                 <text x="${p.x.toFixed(2)}" y="${(height - 4).toFixed(2)}" fill="#64748b" font-size="9" text-anchor="middle">${p.period}</text>
             `).join("")}
         </svg>
@@ -812,11 +982,100 @@ function renderLatest(summary) {
     if (trendMeta) trendMeta.innerText = `Dirección: ${trend.direction ?? "-"} · Cambio: ${trend.percent_change ?? "-"}`;
 }
 
+function renderEda36m(eda36m) {
+    const summary = summarizeEda(eda36m);
+    const meta = document.getElementById("edaMeta36m");
+    const stats = document.getElementById("edaStats36m");
+    const latestDate = document.getElementById("latestDate36m");
+    const latestValue = document.getElementById("latestValue36m");
+    const latestPrevDate = document.getElementById("latestPrevDate36m");
+    const latestDelta = document.getElementById("latestDelta36m");
+    const trendMeta = document.getElementById("edaTrendMeta36m");
+    const monthlyBody = document.getElementById("monthlySummaryBody36m");
+    const yearlyBody = document.getElementById("yearlySummaryBody36m");
+    const result = document.getElementById("edaResult36m");
+
+    if (meta) {
+        meta.innerText = `Rango: ${summary.meta?.start_date ?? "-"} a ${summary.meta?.end_date ?? "-"} · Registros: ${summary.meta?.count ?? 0}`;
+    }
+
+    if (stats) {
+        const d = summary.descriptive || {};
+        const t = summary.trend || {};
+        const o = summary.outliers || {};
+        stats.innerHTML = `
+            <div class="stat-item"><span class="stat-label">Media</span><strong class="stat-value">${d.mean ?? "-"}</strong></div>
+            <div class="stat-item"><span class="stat-label">Desv. estándar</span><strong class="stat-value">${d.std ?? "-"}</strong></div>
+            <div class="stat-item"><span class="stat-label">Tendencia</span><strong class="stat-value">${t.direction ?? "-"}</strong></div>
+            <div class="stat-item"><span class="stat-label">Outliers</span><strong class="stat-value">${o.count ?? 0}</strong></div>
+        `;
+    }
+
+    if (latestDate) latestDate.innerText = summary.latest?.date ?? "-";
+    if (latestValue) latestValue.innerText = summary.latest?.value ?? "-";
+    if (latestPrevDate) latestPrevDate.innerText = summary.latest?.prev_date ?? "-";
+    if (latestDelta) latestDelta.innerText = summary.latest?.delta ?? "-";
+    if (trendMeta) {
+        trendMeta.innerText = `Dirección: ${summary.trend?.direction ?? "-"} · Cambio: ${summary.trend?.percent_change ?? "-"}`;
+    }
+
+    if (monthlyBody) {
+        const monthly = summary.monthly_summary || [];
+        monthlyBody.innerHTML = monthly.length
+            ? monthly.map(m => `
+                <tr>
+                    <td>${m.period}</td>
+                    <td>${formatTrm(m.avg)}</td>
+                    <td>${formatTrm(m.min)}</td>
+                    <td>${formatTrm(m.max)}</td>
+                </tr>
+            `).join("")
+            : '<tr><td colspan="4" class="meta">Sin datos mensuales.</td></tr>';
+    }
+
+    if (yearlyBody) {
+        const yearly = summary.yearly_summary || [];
+        yearlyBody.innerHTML = yearly.length
+            ? yearly.map(y => `
+                <tr>
+                    <td>${y.year}</td>
+                    <td>${formatTrm(y.avg)}</td>
+                    <td>${formatTrm(y.min)}</td>
+                    <td>${formatTrm(y.max)}</td>
+                </tr>
+            `).join("")
+            : '<tr><td colspan="4" class="meta">Sin datos anuales.</td></tr>';
+    }
+
+    renderSparklineInContainer("edaSparkline36m", "edaSelectedPoint36m", summary.monthly_summary || []);
+
+    if (result) {
+        result.innerText = JSON.stringify(summary, null, 2);
+    }
+}
+
 function readEdaFilters() {
     const startDate = document.getElementById("edaFilterStartDate")?.value || "";
     const endDate = document.getElementById("edaFilterEndDate")?.value || "";
     const monthlyWindow = Number(document.getElementById("edaMonthlyWindow")?.value || "6");
     return { startDate, endDate, monthlyWindow };
+}
+
+function subtractMonthsFromIsoDate(isoDate, months) {
+    const [year, month, day] = isoDate.split("-").map(Number);
+    const totalMonths = (year * 12 + (month - 1)) - months;
+    const targetYear = Math.floor(totalMonths / 12);
+    const targetMonth = (totalMonths % 12) + 1;
+    const lastDay = new Date(targetYear, targetMonth, 0).getDate();
+    const safeDay = Math.min(day, lastDay);
+    return `${targetYear.toString().padStart(4, "0")}-${targetMonth.toString().padStart(2, "0")}-${safeDay.toString().padStart(2, "0")}`;
+}
+
+function rowsLastNMonths(rows, months) {
+    if (!rows.length || months <= 0) return [...rows];
+    const latestDate = rows[rows.length - 1].date;
+    const cutoff = subtractMonthsFromIsoDate(latestDate, months);
+    return rows.filter(row => row.date >= cutoff);
 }
 
 function applyEdaFilters(scrollToPanel = false) {
@@ -848,14 +1107,23 @@ function applyEdaFilters(scrollToPanel = false) {
     }
 }
 
-function loadEda(scrollToPanel = false) {
+function loadEda(scrollToPanel = false, forceRefresh = false) {
     const edaMeta = document.getElementById("edaMeta");
     const edaCard = document.getElementById("edaCard");
     if (edaMeta) edaMeta.innerText = "Cargando EDA...";
     if (edaCard) edaCard.classList.add("loading");
 
+    if (forceRefresh) {
+        cachedRowsPromise = null;
+    }
+
     fetchAllRows()
-        .then(() => applyEdaFilters(scrollToPanel))
+        .then(() => {
+            applyEdaFilters(scrollToPanel);
+            const last36Rows = rowsLastNMonths(allRowsCache, 36);
+            const eda36m = computeEdaFromRows(last36Rows, 36);
+            renderEda36m(eda36m);
+        })
         .catch(err => {
             if (edaMeta) {
                 edaMeta.innerText = "Error cargando EDA: " + err;
@@ -895,11 +1163,22 @@ function readVisualFilters() {
 }
 
 function applyQuickWindow(series, months) {
-    if (!months || months <= 0 || !series.length) return;
-    const start = series[Math.max(0, series.length - months)].date;
-    const end = series[series.length - 1].date;
     const startInput = document.getElementById("visualFilterStartDate");
     const endInput = document.getElementById("visualFilterEndDate");
+    if (!series.length) {
+        if (startInput) startInput.value = "";
+        if (endInput) endInput.value = "";
+        return;
+    }
+
+    if (!months || months <= 0) {
+        if (startInput) startInput.value = "";
+        if (endInput) endInput.value = "";
+        return;
+    }
+
+    const start = series[Math.max(0, series.length - months)].date;
+    const end = series[series.length - 1].date;
     if (startInput) startInput.value = start;
     if (endInput) endInput.value = end;
 }
@@ -970,7 +1249,7 @@ function renderVisualChart(series, metric) {
         return { period: row.period, value, row };
     });
 
-    const width = 980;
+    const width = Math.max(980, Math.floor((chartContainer.clientWidth || 980) - 2));
     const height = 320;
     const padL = 52;
     const padR = 20;
@@ -1037,6 +1316,247 @@ function renderVisualChart(series, metric) {
     });
 }
 
+function renderVisualTrendVsMa(series) {
+    const container = document.getElementById("visualTrendVsMaChart");
+    if (!container) return;
+
+    if (series.length < 2) {
+        container.innerHTML = '<div class="meta">Datos insuficientes para comparar tendencia y media móvil.</div>';
+        return;
+    }
+
+    const width = 980;
+    const height = 280;
+    const padL = 48;
+    const padR = 20;
+    const padT = 18;
+    const padB = 42;
+    const avgValues = series.map(row => Number(row.avg));
+    const maValues = series.map(row => Number(row.movingAvg));
+    const merged = [...avgValues, ...maValues];
+    const min = Math.min(...merged);
+    const max = Math.max(...merged);
+    const range = max - min || 1;
+    const usableW = width - padL - padR;
+    const usableH = height - padT - padB;
+
+    const xFor = i => padL + (i * usableW) / (series.length - 1 || 1);
+    const yFor = v => padT + ((max - v) * usableH) / range;
+
+    const avgPts = avgValues.map((v, i) => `${xFor(i).toFixed(2)},${yFor(v).toFixed(2)}`).join(" ");
+    const maPts = maValues.map((v, i) => `${xFor(i).toFixed(2)},${yFor(v).toFixed(2)}`).join(" ");
+    const yTicks = [0, 0.25, 0.5, 0.75, 1].map(ratio => {
+        const y = padT + ratio * usableH;
+        const value = max - ratio * range;
+        return { y, value };
+    });
+
+    container.innerHTML = `
+        <svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Tendencia vs media móvil 3M">
+            ${yTicks.map(t => `
+                <line x1="${padL}" y1="${t.y.toFixed(2)}" x2="${width - padR}" y2="${t.y.toFixed(2)}" stroke="#e5e7eb" stroke-width="1"></line>
+                <text x="${(padL - 8).toFixed(2)}" y="${(t.y + 3).toFixed(2)}" fill="#64748b" font-size="10" text-anchor="end">${formatTrm(t.value)}</text>
+            `).join("")}
+            <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${height - padB}" stroke="#64748b" stroke-width="1.2"></line>
+            <line x1="${padL}" y1="${height - padB}" x2="${width - padR}" y2="${height - padB}" stroke="#64748b" stroke-width="1.2"></line>
+            <polyline points="${avgPts}" fill="none" stroke="#0f766e" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></polyline>
+            <polyline points="${maPts}" fill="none" stroke="#b45309" stroke-width="2.2" stroke-dasharray="5 4" stroke-linejoin="round" stroke-linecap="round"></polyline>
+            ${series.map((row, i) => {
+                if (i % 6 !== 0 && i !== series.length - 1) return "";
+                return `<text x="${xFor(i).toFixed(2)}" y="${height - 10}" fill="#64748b" font-size="10" text-anchor="middle">${row.period}</text>`;
+            }).join("")}
+            <text x="${padL}" y="${padT - 4}" fill="#0f766e" font-size="11">● Promedio</text>
+            <text x="${padL + 120}" y="${padT - 4}" fill="#b45309" font-size="11">● Media móvil 3M</text>
+        </svg>
+    `;
+}
+
+function renderVisualVolatility(series) {
+    const container = document.getElementById("visualVolatilityChart");
+    if (!container) return;
+
+    const rows = series.filter(row => row.changeAbs !== null && row.changeAbs !== undefined);
+    if (!rows.length) {
+        container.innerHTML = '<div class="meta">Sin datos de variación para calcular volatilidad.</div>';
+        return;
+    }
+
+    const width = 980;
+    const height = 280;
+    const padL = 48;
+    const padR = 20;
+    const padT = 18;
+    const padB = 40;
+    const usableW = width - padL - padR;
+    const usableH = height - padT - padB;
+    const values = rows.map(row => Math.abs(Number(row.changeAbs)));
+    const maxVal = Math.max(...values) || 1;
+    const barW = Math.max(4, (usableW / values.length) * 0.72);
+    const yTicks = [0, 0.25, 0.5, 0.75, 1].map(ratio => {
+        const y = padT + ratio * usableH;
+        const value = maxVal - ratio * maxVal;
+        return { y, value };
+    });
+
+    container.innerHTML = `
+        <svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Volatilidad mensual absoluta">
+            ${yTicks.map(t => `
+                <line x1="${padL}" y1="${t.y.toFixed(2)}" x2="${width - padR}" y2="${t.y.toFixed(2)}" stroke="#e5e7eb" stroke-width="1"></line>
+                <text x="${(padL - 8).toFixed(2)}" y="${(t.y + 3).toFixed(2)}" fill="#64748b" font-size="10" text-anchor="end">${formatTrm(t.value)}</text>
+            `).join("")}
+            <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${height - padB}" stroke="#64748b" stroke-width="1.2"></line>
+            <line x1="${padL}" y1="${height - padB}" x2="${width - padR}" y2="${height - padB}" stroke="#64748b" stroke-width="1.2"></line>
+            ${values.map((value, i) => {
+                const slotW = usableW / values.length;
+                const x = padL + i * slotW + (slotW - barW) / 2;
+                const h = (value / maxVal) * usableH;
+                const y = padT + usableH - h;
+                return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barW.toFixed(2)}" height="${h.toFixed(2)}" rx="2" fill="#2563eb"><title>${rows[i].period}: ${formatTrm(value)}</title></rect>`;
+            }).join("")}
+            ${rows.map((row, i) => {
+                if (i % 6 !== 0 && i !== rows.length - 1) return "";
+                const x = padL + (i * usableW) / rows.length + (usableW / rows.length) / 2;
+                return `<text x="${x.toFixed(2)}" y="${height - 10}" fill="#64748b" font-size="10" text-anchor="middle">${row.period}</text>`;
+            }).join("")}
+        </svg>
+    `;
+}
+
+function renderVisualDistribution(series) {
+    const container = document.getElementById("visualDistributionChart");
+    if (!container) return;
+
+    const values = series.map(row => Number(row.avg));
+    if (values.length < 2) {
+        container.innerHTML = '<div class="meta">Datos insuficientes para distribución.</div>';
+        return;
+    }
+
+    const bins = 10;
+    const width = 980;
+    const height = 280;
+    const padL = 48;
+    const padR = 20;
+    const padT = 18;
+    const padB = 40;
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
+    const step = range / bins;
+    const counts = Array.from({ length: bins }, () => 0);
+    values.forEach(v => {
+        let idx = Math.floor((v - min) / step);
+        if (!Number.isFinite(idx)) idx = 0;
+        if (idx >= bins) idx = bins - 1;
+        if (idx < 0) idx = 0;
+        counts[idx] += 1;
+    });
+
+    const usableW = width - padL - padR;
+    const usableH = height - padT - padB;
+    const maxCount = Math.max(...counts) || 1;
+    const barW = Math.max(6, (usableW / bins) * 0.78);
+    const yTicks = [0, 0.25, 0.5, 0.75, 1].map(ratio => {
+        const y = padT + ratio * usableH;
+        const value = Math.round(maxCount - ratio * maxCount);
+        return { y, value };
+    });
+
+    container.innerHTML = `
+        <svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Distribución de promedios">
+            ${yTicks.map(t => `
+                <line x1="${padL}" y1="${t.y.toFixed(2)}" x2="${width - padR}" y2="${t.y.toFixed(2)}" stroke="#e5e7eb" stroke-width="1"></line>
+                <text x="${(padL - 8).toFixed(2)}" y="${(t.y + 3).toFixed(2)}" fill="#64748b" font-size="10" text-anchor="end">${t.value}</text>
+            `).join("")}
+            <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${height - padB}" stroke="#64748b" stroke-width="1.2"></line>
+            <line x1="${padL}" y1="${height - padB}" x2="${width - padR}" y2="${height - padB}" stroke="#64748b" stroke-width="1.2"></line>
+            ${counts.map((count, i) => {
+                const slotW = usableW / bins;
+                const x = padL + i * slotW + (slotW - barW) / 2;
+                const h = (count / maxCount) * usableH;
+                const y = padT + usableH - h;
+                const startBucket = min + i * step;
+                const endBucket = startBucket + step;
+                return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barW.toFixed(2)}" height="${h.toFixed(2)}" rx="2" fill="#7c3aed"><title>${formatTrm(startBucket)} - ${formatTrm(endBucket)}: ${count}</title></rect>`;
+            }).join("")}
+            <text x="${padL}" y="${height - 10}" fill="#64748b" font-size="10">${formatTrm(min)}</text>
+            <text x="${width - padR - 70}" y="${height - 10}" fill="#64748b" font-size="10">${formatTrm(max)}</text>
+        </svg>
+    `;
+}
+
+function renderVisualSeasonality(series) {
+    const container = document.getElementById("visualSeasonalityChart");
+    if (!container) return;
+
+    if (!series.length) {
+        container.innerHTML = '<div class="meta">Sin datos para estacionalidad.</div>';
+        return;
+    }
+
+    const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    const buckets = Array.from({ length: 12 }, () => []);
+    series.forEach(row => {
+        const month = Number(String(row.period).slice(5, 7));
+        if (month >= 1 && month <= 12) {
+            buckets[month - 1].push(Number(row.avg));
+        }
+    });
+
+    const monthAvg = buckets.map(vals => vals.length ? average(vals) : 0);
+    if (!monthAvg.some(v => v > 0)) {
+        container.innerHTML = '<div class="meta">Sin datos válidos para estacionalidad.</div>';
+        return;
+    }
+
+    const width = 980;
+    const height = 280;
+    const padL = 48;
+    const padR = 20;
+    const padT = 18;
+    const padB = 40;
+    const usableW = width - padL - padR;
+    const usableH = height - padT - padB;
+    const min = Math.min(...monthAvg);
+    const max = Math.max(...monthAvg);
+    const range = max - min || 1;
+    const barW = Math.max(8, (usableW / 12) * 0.72);
+    const yTicks = [0, 0.25, 0.5, 0.75, 1].map(ratio => {
+        const y = padT + ratio * usableH;
+        const value = max - ratio * range;
+        return { y, value };
+    });
+
+    container.innerHTML = `
+        <svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Estacionalidad mensual">
+            ${yTicks.map(t => `
+                <line x1="${padL}" y1="${t.y.toFixed(2)}" x2="${width - padR}" y2="${t.y.toFixed(2)}" stroke="#e5e7eb" stroke-width="1"></line>
+                <text x="${(padL - 8).toFixed(2)}" y="${(t.y + 3).toFixed(2)}" fill="#64748b" font-size="10" text-anchor="end">${formatTrm(t.value)}</text>
+            `).join("")}
+            <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${height - padB}" stroke="#64748b" stroke-width="1.2"></line>
+            <line x1="${padL}" y1="${height - padB}" x2="${width - padR}" y2="${height - padB}" stroke="#64748b" stroke-width="1.2"></line>
+            ${monthAvg.map((value, i) => {
+                const slotW = usableW / 12;
+                const x = padL + i * slotW + (slotW - barW) / 2;
+                const h = ((value - min) / range) * usableH;
+                const y = padT + usableH - h;
+                return `<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${barW.toFixed(2)}" height="${h.toFixed(2)}" rx="2" fill="#0ea5e9"><title>${monthNames[i]}: ${formatTrm(value)}</title></rect>`;
+            }).join("")}
+            ${monthNames.map((name, i) => {
+                const x = padL + (i + 0.5) * (usableW / 12);
+                return `<text x="${x.toFixed(2)}" y="${height - 10}" fill="#64748b" font-size="10" text-anchor="middle">${name}</text>`;
+            }).join("")}
+        </svg>
+    `;
+}
+
+function renderVisualExtraCharts(series) {
+    renderVisualTrendVsMa(series);
+    renderVisualVolatility(series);
+    renderVisualDistribution(series);
+    renderVisualSeasonality(series);
+}
+
 let visualSeriesState = [];
 
 function applyVisualFilters() {
@@ -1053,6 +1573,7 @@ function applyVisualFilters() {
     renderVisualStats(series);
     renderVisualTable(series);
     renderVisualChart(series, filters.metric);
+    renderVisualExtraCharts(series);
 }
 
 function resetVisualFilters() {
@@ -1086,8 +1607,32 @@ function initDataPage() {
 }
 
 function initEdaPage() {
+    const allBtn = document.getElementById("showEdaAllBtn");
+    const m36Btn = document.getElementById("showEda36mBtn");
+    const allPanel = document.getElementById("edaViewAll");
+    const m36Panel = document.getElementById("edaView36m");
     const applyBtn = document.getElementById("applyEdaFiltersBtn");
     const resetBtn = document.getElementById("resetEdaFiltersBtn");
+
+    const setEdaView = (view) => {
+        const isAll = view === "all";
+
+        if (allPanel) allPanel.classList.toggle("is-hidden", !isAll);
+        if (m36Panel) m36Panel.classList.toggle("is-hidden", isAll);
+
+        if (allBtn) {
+            allBtn.classList.toggle("is-active", isAll);
+            allBtn.setAttribute("aria-selected", isAll ? "true" : "false");
+        }
+        if (m36Btn) {
+            m36Btn.classList.toggle("is-active", !isAll);
+            m36Btn.setAttribute("aria-selected", !isAll ? "true" : "false");
+        }
+    };
+
+    if (allBtn) allBtn.addEventListener("click", () => setEdaView("all"));
+    if (m36Btn) m36Btn.addEventListener("click", () => setEdaView("36m"));
+    setEdaView("all");
 
     if (applyBtn) applyBtn.addEventListener("click", () => applyEdaFilters(false));
     if (resetBtn) {
@@ -1112,9 +1657,15 @@ function initVisualizationsPage() {
     const applyBtn = document.getElementById("applyVisualFiltersBtn");
     const resetBtn = document.getElementById("resetVisualFiltersBtn");
     const quickWindow = document.getElementById("visualQuickWindow");
+    const metricSelect = document.getElementById("visualMetricSelect");
+    const startInput = document.getElementById("visualFilterStartDate");
+    const endInput = document.getElementById("visualFilterEndDate");
 
     if (applyBtn) applyBtn.addEventListener("click", applyVisualFilters);
     if (resetBtn) resetBtn.addEventListener("click", resetVisualFilters);
+    if (metricSelect) metricSelect.addEventListener("change", applyVisualFilters);
+    if (startInput) startInput.addEventListener("change", applyVisualFilters);
+    if (endInput) endInput.addEventListener("change", applyVisualFilters);
     if (quickWindow) {
         quickWindow.addEventListener("change", () => {
             applyQuickWindow(visualSeriesState, Number(quickWindow.value));
@@ -1125,6 +1676,16 @@ function initVisualizationsPage() {
     applyVisualFilters();
 }
 
+function initPredictionPage() {
+    const allBtn = document.getElementById("predictionScopeAllBtn");
+    const m36Btn = document.getElementById("predictionScope36mBtn");
+
+    if (allBtn) allBtn.addEventListener("click", () => setPredictionScope("all_data"));
+    if (m36Btn) m36Btn.addEventListener("click", () => setPredictionScope("last_36_months"));
+
+    updatePredictionScopeButtons("all_data");
+}
+
 window.getPrediction = getPrediction;
 window.loadData = loadData;
 window.loadEda = loadEda;
@@ -1133,3 +1694,4 @@ const currentPage = document.querySelector("main.page-container")?.dataset?.page
 if (currentPage === "data") initDataPage();
 if (currentPage === "eda") initEdaPage();
 if (currentPage === "visualizations") initVisualizationsPage();
+if (currentPage === "prediction") initPredictionPage();

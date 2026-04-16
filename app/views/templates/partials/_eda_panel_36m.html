@@ -1,56 +1,55 @@
-<div class="card" id="edaCard">
-    <h3>EDA (Exploratory Data Analysis)</h3>
-    <div id="edaMeta" class="meta">
-        Rango: {{ initial_eda.meta.start_date }} a {{ initial_eda.meta.end_date }} · Registros: {{ initial_eda.meta.count }}
+<div class="sub-card" id="edaCard36m">
+    <div id="edaMeta36m" class="meta">
+        Rango: {{ initial_eda_36m.meta.start_date }} a {{ initial_eda_36m.meta.end_date }} · Registros: {{ initial_eda_36m.meta.count }}
     </div>
 
-    <div id="edaStats" class="stats-grid">
+    <div id="edaStats36m" class="stats-grid">
         <div class="stat-item">
             <span class="stat-label">Media</span>
-            <strong class="stat-value">{{ initial_eda_summary.descriptive.mean }}</strong>
+            <strong class="stat-value">{{ initial_eda_36m_summary.descriptive.mean }}</strong>
         </div>
         <div class="stat-item">
             <span class="stat-label">Desv. estándar</span>
-            <strong class="stat-value">{{ initial_eda_summary.descriptive.std }}</strong>
+            <strong class="stat-value">{{ initial_eda_36m_summary.descriptive.std }}</strong>
         </div>
         <div class="stat-item">
             <span class="stat-label">Tendencia</span>
-            <strong class="stat-value">{{ initial_eda_summary.trend.direction }}</strong>
+            <strong class="stat-value">{{ initial_eda_36m_summary.trend.direction }}</strong>
         </div>
         <div class="stat-item">
             <span class="stat-label">Outliers</span>
-            <strong class="stat-value">{{ initial_eda_summary.outliers.count }}</strong>
+            <strong class="stat-value">{{ initial_eda_36m_summary.outliers.count }}</strong>
         </div>
     </div>
 
     <div class="eda-visual-grid">
-        <div class="sub-card" id="edaTrendCard">
-            <h4>Tendencia reciente (promedio mensual)</h4>
-            <div id="edaSparkline" class="sparkline-wrap"></div>
-            <div id="edaTrendMeta" class="meta">
-                Dirección: {{ initial_eda_summary.trend.direction }} · Cambio: {{ initial_eda_summary.trend.percent_change }}
+        <div class="sub-card" id="edaTrendCard36m">
+            <h4>Tendencia últimos 36 meses (promedio mensual)</h4>
+            <div id="edaSparkline36m" class="sparkline-wrap"></div>
+            <div id="edaTrendMeta36m" class="meta">
+                Dirección: {{ initial_eda_36m_summary.trend.direction }} · Cambio: {{ initial_eda_36m_summary.trend.percent_change }}
             </div>
-            <div id="edaSelectedPoint" class="meta">Selecciona un punto en la gráfica para ver detalle.</div>
+            <div id="edaSelectedPoint36m" class="meta">Selecciona un punto en la gráfica para ver detalle.</div>
         </div>
 
-        <div class="sub-card" id="edaLatestCard">
-            <h4>Último dato</h4>
+        <div class="sub-card" id="edaLatestCard36m">
+            <h4>Último dato (36M)</h4>
             <div class="latest-grid">
                 <div>
                     <span class="stat-label">Fecha</span>
-                    <strong class="stat-value" id="latestDate">{{ initial_eda_summary.latest.date }}</strong>
+                    <strong class="stat-value" id="latestDate36m">{{ initial_eda_36m_summary.latest.date }}</strong>
                 </div>
                 <div>
                     <span class="stat-label">Valor</span>
-                    <strong class="stat-value" id="latestValue">{{ initial_eda_summary.latest.value }}</strong>
+                    <strong class="stat-value" id="latestValue36m">{{ initial_eda_36m_summary.latest.value }}</strong>
                 </div>
                 <div>
                     <span class="stat-label">Fecha anterior</span>
-                    <strong class="stat-value" id="latestPrevDate">{{ initial_eda_summary.latest.prev_date }}</strong>
+                    <strong class="stat-value" id="latestPrevDate36m">{{ initial_eda_36m_summary.latest.prev_date }}</strong>
                 </div>
                 <div>
                     <span class="stat-label">Delta</span>
-                    <strong class="stat-value" id="latestDelta">{{ initial_eda_summary.latest.delta }}</strong>
+                    <strong class="stat-value" id="latestDelta36m">{{ initial_eda_36m_summary.latest.delta }}</strong>
                 </div>
             </div>
         </div>
@@ -58,7 +57,7 @@
 
     <div class="eda-table-grid">
         <div class="sub-card">
-            <h4>Resumen mensual (últimos 6)</h4>
+            <h4>Resumen mensual (36 meses)</h4>
             <table>
                 <thead>
                     <tr>
@@ -68,8 +67,8 @@
                         <th>Máximo</th>
                     </tr>
                 </thead>
-                <tbody id="monthlySummaryBody">
-                    {% for m in initial_eda.monthly_summary[-6:] %}
+                <tbody id="monthlySummaryBody36m">
+                    {% for m in initial_eda_36m.monthly_summary %}
                     <tr>
                         <td>{{ m.period }}</td>
                         <td>{{ "$%.2f"|format(m.avg) }}</td>
@@ -82,7 +81,7 @@
         </div>
 
         <div class="sub-card">
-            <h4>Resumen anual</h4>
+            <h4>Resumen anual (últimos 3 años)</h4>
             <table>
                 <thead>
                     <tr>
@@ -92,8 +91,8 @@
                         <th>Máximo</th>
                     </tr>
                 </thead>
-                <tbody id="yearlySummaryBody">
-                    {% for y in initial_eda.yearly_summary %}
+                <tbody id="yearlySummaryBody36m">
+                    {% for y in initial_eda_36m.yearly_summary %}
                     <tr>
                         <td>{{ y.year }}</td>
                         <td>{{ "$%.2f"|format(y.avg) }}</td>
@@ -107,7 +106,7 @@
     </div>
 
     <details class="raw-detail">
-        <summary>Ver detalle técnico (JSON)</summary>
-        <pre id="edaResult">{{ initial_eda_summary | tojson(indent=2) }}</pre>
+        <summary>Ver detalle técnico 36 meses (JSON)</summary>
+        <pre id="edaResult36m">{{ initial_eda_36m_summary | tojson(indent=2) }}</pre>
     </details>
 </div>

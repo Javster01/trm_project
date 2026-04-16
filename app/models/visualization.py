@@ -327,7 +327,9 @@ def _histogram_svg(values, bins=10, width=980, height=300):
 def get_last_36_months_visualization():
     records = load_trm_data()
     monthly = _aggregate_monthly_avg(records)
-    last_36 = monthly[-36:]
+    # Se entrega toda la serie para permitir filtros rápidos (12/24/36/Todo) en frontend.
+    # La vista sigue iniciando en 36 meses por la configuración de `visualQuickWindow`.
+    last_36 = monthly
 
     if not last_36:
         return {

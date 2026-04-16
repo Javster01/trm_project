@@ -1,3 +1,4 @@
+from calendar import monthrange
 from statistics import median, pstdev
 
 from .data_loader import load_trm_data
@@ -39,8 +40,29 @@ def _linear_slope(values):
     return float(num / den) if den else 0.0
 
 
-def get_eda():
-    records = load_trm_data()
+def _subtract_months(dt, months):
+    if months <= 0:
+        return dt
+
+    total_months = (dt.year * 12 + (dt.month - 1)) - months
+    year = total_months // 12
+    month = (total_months % 12) + 1
+    day = min(dt.day, monthrange(year, month)[1])
+    return dt.replace(year=year, month=month, day=day)
+
+
+def _records_last_n_months(records, months):
+    if not records:
+        return []
+    if months <= 0:
+        return list(records)
+
+    latest_date = records[-1]["date"]
+    cutoff = _subtract_months(latest_date, months)
+    return [item for item in records if item["date"] >= cutoff]
+
+
+def _build_eda(records, monthly_periods_limit=12, yearly_periods_limit=10):
     if not records:
         return {
             "meta": {"count": 0},
@@ -101,7 +123,11 @@ def get_eda():
         yearly_buckets.setdefault(y_key, []).append(v)
 
     monthly_summary = []
-    for m in sorted(monthly_buckets.keys())[-12:]:
+    monthly_keys = sorted(monthly_buckets.keys())
+    if monthly_periods_limit and monthly_periods_limit > 0:
+        monthly_keys = monthly_keys[-monthly_periods_limit:]
+
+    for m in monthly_keys:
         vals = monthly_buckets[m]
         monthly_summary.append(
             {
@@ -114,7 +140,11 @@ def get_eda():
         )
 
     yearly_summary = []
-    for y in sorted(yearly_buckets.keys())[-10:]:
+    yearly_keys = sorted(yearly_buckets.keys())
+    if yearly_periods_limit and yearly_periods_limit > 0:
+        yearly_keys = yearly_keys[-yearly_periods_limit:]
+
+    for y in yearly_keys:
         vals = yearly_buckets[y]
         yearly_summary.append(
             {
@@ -172,6 +202,19 @@ def get_eda():
         "monthly_summary": monthly_summary,
         "yearly_summary": yearly_summary,
     }
+
+
+def get_eda():
+    return _build_eda(load_trm_data(), monthly_periods_limit=12, yearly_periods_limit=10)
+
+
+def get_eda_last_36_months():
+    records = load_trm_data()
+    last_36_months = _records_last_n_months(records, 36)
+    eda = _build_eda(last_36_months, monthly_periods_limit=36, yearly_periods_limit=3)
+    eda["meta"]["window_months"] = 36
+    eda["meta"]["scope"] = "last_36_months"
+    return eda
 
 
 def get_analysis():

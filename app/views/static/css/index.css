@@ -18,7 +18,7 @@
 
 body {
     margin: 0;
-    padding: 28px;
+    padding: clamp(8px, 1.1vw, 16px);
     color: var(--ink);
     font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
     background:
@@ -56,7 +56,8 @@ code {
 }
 
 .page-container {
-    max-width: 1220px;
+    width: min(100%, 1680px);
+    max-width: 1680px;
     margin: 0 auto;
     animation: page-rise 0.55s ease-out;
 }
@@ -77,7 +78,7 @@ code {
     gap: 14px;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 18px;
+    margin-bottom: 12px;
     padding: 10px 12px;
     border-radius: 14px;
     border: 1px solid rgba(16, 33, 39, 0.12);
@@ -139,7 +140,7 @@ code {
     background: linear-gradient(150deg, var(--surface) 0%, var(--surface-2) 100%);
     border: 1px solid var(--line);
     border-radius: 20px;
-    padding: 24px;
+    padding: clamp(14px, 1.4vw, 20px);
     box-shadow: var(--shadow-soft);
     position: relative;
     overflow: hidden;
@@ -241,10 +242,23 @@ code {
     box-shadow: 0 10px 18px rgba(180, 83, 9, 0.24);
 }
 
+.btn.is-active {
+    outline: 2px solid rgba(16, 33, 39, 0.28);
+    outline-offset: 1px;
+}
+
+.eda-view-switch {
+    margin-top: 12px;
+}
+
+.is-hidden {
+    display: none !important;
+}
+
 .content-grid {
-    margin-top: 16px;
+    margin-top: 10px;
     display: grid;
-    gap: 14px;
+    gap: 10px;
 }
 
 .prediction-layout {
@@ -325,8 +339,8 @@ code {
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 16px;
-    padding: 16px;
-    margin-top: 14px;
+    padding: clamp(12px, 1.2vw, 16px);
+    margin-top: 10px;
     box-shadow: var(--shadow-soft);
 }
 
@@ -335,9 +349,9 @@ code {
 }
 
 .controls-grid {
-    margin-top: 12px;
+    margin-top: 10px;
     display: grid;
-    gap: 10px;
+    gap: 8px;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
@@ -373,9 +387,9 @@ code {
 }
 
 .stats-grid {
-    margin-top: 14px;
+    margin-top: 10px;
     display: grid;
-    gap: 10px;
+    gap: 8px;
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
 
@@ -410,9 +424,14 @@ code {
 .eda-visual-grid,
 .eda-table-grid {
     display: grid;
-    gap: 12px;
-    margin-top: 12px;
+    gap: 10px;
+    margin-top: 10px;
     grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+}
+
+.eda-visual-grid {
+    align-items: start;
+    grid-template-columns: minmax(420px, 1.35fr) minmax(320px, 1fr);
 }
 
 .sub-card {
@@ -433,9 +452,15 @@ code {
     gap: 10px;
 }
 
+#edaLatestCard,
+#edaLatestCard36m {
+    display: grid;
+    align-content: start;
+}
+
 .sparkline-wrap {
     width: 100%;
-    min-height: 132px;
+    min-height: 176px;
     border-radius: 12px;
     background: #fffef8;
     border: 1px solid #ddd6c3;
@@ -444,7 +469,7 @@ code {
 
 .sparkline-svg {
     width: 100%;
-    height: 110px;
+    height: clamp(165px, 20vw, 220px);
     display: block;
 }
 
@@ -501,7 +526,7 @@ tbody tr:hover {
 
 .chart-svg {
     width: 100%;
-    min-width: 1120px;
+    min-width: 980px;
     height: 300px;
     display: block;
 }
@@ -550,11 +575,15 @@ tbody tr:hover {
         width: 100%;
         justify-content: flex-start;
     }
+
+    .eda-visual-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 640px) {
     body {
-        padding: 14px;
+        padding: 8px;
     }
 
     .btn {
@@ -566,7 +595,7 @@ tbody tr:hover {
     }
 
     .chart-svg {
-        min-width: 920px;
+        min-width: 760px;
     }
 
     .card,

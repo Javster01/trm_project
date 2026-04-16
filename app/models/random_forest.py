@@ -62,6 +62,10 @@ def build_random_forest_prediction(records=None, test_ratio=0.2, random_state=42
     future_predictions = model.predict(future_features)
     next_month_projection = float(np.mean(future_predictions))
 
+    next_day_date = dates[-1] + timedelta(days=1)
+    next_day_feature = np.array([_as_features(next_day_date)], dtype=float)
+    next_day_projection = float(model.predict(next_day_feature)[0])
+
     feature_importance = {
         "day": float(model.feature_importances_[0]),
         "month": float(model.feature_importances_[1]),
@@ -106,6 +110,8 @@ def build_random_forest_prediction(records=None, test_ratio=0.2, random_state=42
         "test_series": test_series,
         "future_series": future_series,
         "forecast": {
+            "next_day_projection": next_day_projection,
+            "next_day_date": next_day_date.strftime("%Y-%m-%d"),
             "next_month_projection": next_month_projection,
             "next_month_start": future_series[0]["date"] if future_series else None,
             "next_month_end": future_series[-1]["date"] if future_series else None,

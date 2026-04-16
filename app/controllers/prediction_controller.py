@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, jsonify
-from ..models.analysis import get_analysis, get_eda
+from ..models.analysis import get_analysis, get_eda, get_eda_last_36_months
 from ..models.data_loader import load_trm_data
 from ..models.visualization import get_last_36_months_visualization
 from ..models.prediction_service import build_prediction_dashboard
@@ -119,7 +119,9 @@ def data_page():
 def eda_page():
     records = load_trm_data()
     eda = get_eda()
+    eda_36m = get_eda_last_36_months()
     eda_summary = _eda_summary_for_view(eda)
+    eda_36m_summary = _eda_summary_for_view(eda_36m)
 
     return render_template(
         "pages/eda.html",
@@ -127,6 +129,8 @@ def eda_page():
         initial_count=len(records),
         initial_eda=eda,
         initial_eda_summary=eda_summary,
+        initial_eda_36m=eda_36m,
+        initial_eda_36m_summary=eda_36m_summary,
     )
 
 

@@ -3,6 +3,10 @@
 		<div>
 			<h3>Dashboard de predicción</h3>
 			<p class="meta">Random Forest y Monte Carlo se calculan juntos para comparar proyección, dispersión y ajuste histórico.</p>
+			<div class="actions compact-actions" role="tablist" aria-label="Selector de alcance de predicción">
+				<button class="btn btn-primary is-active" id="predictionScopeAllBtn" type="button" role="tab" aria-selected="true">Todos los datos</button>
+				<button class="btn btn-secondary" id="predictionScope36mBtn" type="button" role="tab" aria-selected="false">Últimos 36 meses</button>
+			</div>
 		</div>
 		<div id="predictionStatus" class="meta">Presiona “Predecir ahora” para ejecutar el modelo.</div>
 	</div>

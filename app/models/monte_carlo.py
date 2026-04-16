@@ -33,6 +33,10 @@ def build_monte_carlo_simulation(records=None, scenarios=1000, random_state=42):
     days_next_month = _next_month_length(latest_date)
     rng = np.random.default_rng(random_state)
 
+    scenario_next_day_values = latest_value + rng.normal(loc=mean_change, scale=std_change, size=scenarios)
+    projection_next_day = float(np.mean(scenario_next_day_values))
+    p05_day, p50_day, p95_day = [float(x) for x in np.percentile(scenario_next_day_values, [5, 50, 95])]
+
     scenario_end_values = []
     for _ in range(scenarios):
         daily_shocks = rng.normal(loc=mean_change, scale=std_change, size=days_next_month)
@@ -50,6 +54,13 @@ def build_monte_carlo_simulation(records=None, scenarios=1000, random_state=42):
             "std_change": std_change,
             "latest_value": latest_value,
             "days_next_month": int(days_next_month),
+        },
+        "projection_next_day": projection_next_day,
+        "next_day_date": (latest_date + timedelta(days=1)).strftime("%Y-%m-%d"),
+        "percentiles_next_day": {
+            "p05": p05_day,
+            "p50": p50_day,
+            "p95": p95_day,
         },
         "projection_next_month": projection,
         "scenario_std": scenario_std,
