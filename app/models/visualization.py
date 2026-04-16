@@ -98,6 +98,8 @@ def _sparkline_svg(values, labels, width=980, height=300):
     {''.join(points_with_tooltips)}
     <text x="{pad_left}" y="{height - 10}" fill="#64748b" font-size="11">{start_label}</text>
     <text x="{width - pad_right - 60}" y="{height - 10}" fill="#64748b" font-size="11">{end_label}</text>
+    <text x="{width / 2 - 40}" y="{height - 5}" fill="#475569" font-size="12" font-weight="bold">Período (Mes-Año)</text>
+    <text x="5" y="{pad_top + 15}" fill="#475569" font-size="12" font-weight="bold" transform="rotate(-90 15 {pad_top + 15})">Valor TRM</text>
 </svg>
 '''.strip()
 
@@ -150,6 +152,8 @@ def _bars_svg(changes, labels, width=980, height=300):
     {''.join(bars)}
     <text x="{pad_left}" y="{height - 10}" fill="#64748b" font-size="11">{escape(labels[0]) if labels else ''}</text>
     <text x="{width - pad_right - 60}" y="{height - 10}" fill="#64748b" font-size="11">{escape(labels[-1]) if labels else ''}</text>
+    <text x="{width / 2 - 60}" y="{height - 5}" fill="#475569" font-size="12" font-weight="bold">Período (Mes-Año)</text>
+    <text x="5" y="{pad_top + 15}" fill="#475569" font-size="12" font-weight="bold" transform="rotate(-90 15 {pad_top + 15})">Cambio (COP)</text>
 </svg>
 '''.strip()
 
@@ -225,6 +229,8 @@ def _two_line_svg(values_a, values_b, labels, line_a_label, line_b_label, width=
     <polyline points="{poly_b}" fill="none" stroke="#f59e0b" stroke-width="2.4" stroke-dasharray="5 4" stroke-linecap="round" stroke-linejoin="round" />
     <text x="{pad_left}" y="{pad_top - 6}" fill="#2563eb" font-size="11">● {escape(line_a_label)}</text>
     <text x="{pad_left + 170}" y="{pad_top - 6}" fill="#f59e0b" font-size="11">● {escape(line_b_label)}</text>
+    <text x="{width / 2 - 60}" y="{height - 5}" fill="#475569" font-size="12" font-weight="bold">Período (Mes-Año)</text>
+    <text x="5" y="{pad_top + 15}" fill="#475569" font-size="12" font-weight="bold" transform="rotate(-90 15 {pad_top + 15})">Valor TRM</text>
     <title>{escape(line_a_label)} vs {escape(line_b_label)}</title>
 </svg>
 '''.strip()
@@ -275,6 +281,8 @@ def _seasonality_svg(series, width=980, height=300):
     <line x1="{pad_left}" y1="{height - pad_bottom}" x2="{width - pad_right}" y2="{height - pad_bottom}" stroke="#64748b" stroke-width="1.2" />
     {''.join(bars)}
     {''.join(labels)}
+    <text x="{width / 2 - 40}" y="{height - 5}" fill="#475569" font-size="12" font-weight="bold">Mes</text>
+    <text x="5" y="{pad_top + 15}" fill="#475569" font-size="12" font-weight="bold" transform="rotate(-90 15 {pad_top + 15})">Valor TRM</text>
 </svg>
 '''.strip()
 
@@ -320,6 +328,8 @@ def _histogram_svg(values, bins=10, width=980, height=300):
     {''.join(bars)}
     <text x="{pad_left}" y="{height - 10}" fill="#64748b" font-size="10">{min_v:,.0f}</text>
     <text x="{width - pad_right - 50}" y="{height - 10}" fill="#64748b" font-size="10">{max_v:,.0f}</text>
+    <text x="{width / 2 - 40}" y="{height - 5}" fill="#475569" font-size="12" font-weight="bold">Rango TRM</text>
+    <text x="5" y="{pad_top + 15}" fill="#475569" font-size="12" font-weight="bold" transform="rotate(-90 15 {pad_top + 15})">Cantidad de meses</text>
 </svg>
 '''.strip()
 

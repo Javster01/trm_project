@@ -1,8 +1,13 @@
-from flask import Blueprint, render_template, jsonify
+from flask import Blueprint, render_template, jsonify, request
 from ..models.analysis import get_analysis, get_eda, get_eda_last_36_months
 from ..models.data_loader import load_trm_data
 from ..models.visualization import get_last_36_months_visualization
 from ..models.prediction_service import build_prediction_dashboard
+from ..models.llm_integration import (
+    get_available_models,
+    chat_with_llm,
+    get_investment_recommendation,
+)
 
 prediction_bp = Blueprint('prediction', __name__)
 
@@ -170,3 +175,120 @@ def data():
 @prediction_bp.route("/eda")
 def eda():
     return jsonify(get_eda())
+
+
+# ============ Endpoints para LLM Chat ============
+
+@prediction_bp.route("/api/llm/models", methods=["GET"])
+def get_llm_models():
+    """Retorna lista de modelos de LLM disponibles en OpenRouter."""
+    models = get_available_models()
+    return jsonify({
+        "success": True,
+        "models": models,
+        "count": len(models),
+    })
+
+
+@prediction_bp.route("/api/llm/chat", methods=["POST"])
+def llm_chat():
+    """
+    Endpoint para chat con LLM.
+    
+    Recibe:
+    {
+        "message": "string",
+        "model": "model_id",
+        "use_random_forest_prediction": true/false (opcional, default true)
+    }
+    """
+    try:
+        data = request.get_json()
+        message = data.get("message", "").strip()
+        model_id = data.get("model", "arcee-ai/trinity-large-preview:free")
+        use_rf = data.get("use_random_forest_prediction", True)
+
+        if not message:
+            return jsonify({
+                "success": False,
+                "error": "El mensaje no puede estar vacío",
+            }), 400
+
+        # Obtener datos para usar en la predicción
+        records = load_trm_data()
+        latest_record = records[-1] if records else None
+        current_trm = float(latest_record["trm"]) if latest_record else 4000
+        
+        # Obtener las predicciones actuales con mejor manejo de errores
+        predicted_trm_rf = current_trm
+        predicted_trm_mc = current_trm
+        rf_daily_forecast = []
+        mc_daily_forecast = []
+        
+        try:
+            dashboard = build_prediction_dashboard()
+            if isinstance(dashboard, dict):
+                # Usar comparación del scope principal
+                comparison = dashboard.get("comparison", {})
+                predicted_trm_rf = float(comparison.get("rf_forecast", current_trm))
+                predicted_trm_mc = float(comparison.get("mc_projection", current_trm))
+                
+                # Obtener predicciones diarias
+                scopes = dashboard.get("scopes", {})
+                all_data_scope = scopes.get("all_data", {})
+                
+                # Random Forest - predicciones diarias
+                rf_data = all_data_scope.get("random_forest", {})
+                rf_forecast_data = rf_data.get("forecast", {})
+                rf_daily_forecast = rf_forecast_data.get("future_series", [])
+                
+                # Monte Carlo - proyecciones diarias (scenarios)
+                mc_data = all_data_scope.get("monte_carlo", {})
+                mc_scenarios = mc_data.get("scenarios", [])
+                # Para MC, usamos los escenarios como referencia de volatilidad
+                if mc_scenarios:
+                    days_in_month = len(mc_scenarios)
+                    # Crear un pronóstico sintético usando percentiles
+                    mc_percentiles = {
+                        "p05": mc_data.get("percentiles", {}).get("p05", current_trm),
+                        "p50": mc_data.get("percentiles", {}).get("p50", current_trm),
+                        "p95": mc_data.get("percentiles", {}).get("p95", current_trm),
+                    }
+                    mc_daily_forecast = {
+                        "type": "probabilistic",
+                        "percentiles": mc_percentiles,
+                        "day_count": days_in_month,
+                    }
+                
+        except Exception as e:
+            # Si falla la predicción, usar valores actuales
+            print(f"Warning: No se pudieron obtener predicciones: {str(e)}")
+            predicted_trm_rf = current_trm
+            predicted_trm_mc = current_trm
+
+        # Llamar al LLM con contexto de predicciones completo
+        result = chat_with_llm(
+            model_id=model_id,
+            user_message=message,
+            current_trm=current_trm,
+            predicted_trm_rf=predicted_trm_rf,
+            predicted_trm_mc=predicted_trm_mc,
+            rf_daily_forecast=rf_daily_forecast,
+            mc_daily_forecast=mc_daily_forecast,
+        )
+
+        return jsonify(result)
+
+    except ValueError as e:
+        return jsonify({
+            "success": False,
+            "error": f"Error de configuración: {str(e)}",
+        }), 500
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        return jsonify({
+            "success": False,
+            "error": f"Error en el servidor: {str(e)}",
+            "trace": error_trace,
+        }), 500

@@ -4,6 +4,260 @@
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+<style>
+    .llm-section {
+        margin-top: 2rem;
+    }
+
+    .llm-container {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 2rem;
+        margin-top: 1.5rem;
+    }
+
+    @media (max-width: 1024px) {
+        .llm-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .model-selector {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .model-option {
+        padding: 1rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .model-option:hover {
+        border-color: #4a90e2;
+        background-color: #f5f8ff;
+    }
+
+    .model-option.selected {
+        border-color: #4a90e2;
+        background-color: #e8f0ff;
+        font-weight: 600;
+    }
+
+    .model-option-name {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .model-option-provider {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 0.25rem;
+    }
+
+    .model-option-desc {
+        font-size: 0.8rem;
+        color: #999;
+        margin-top: 0.25rem;
+    }
+
+    .chat-interface {
+        display: flex;
+        flex-direction: column;
+        border: 2px solid #e0e0e0;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        background: white;
+        max-height: 500px;
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        background: #f9f9f9;
+        min-height: 250px;
+    }
+
+    .chat-message {
+        display: flex;
+        gap: 0.75rem;
+        animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .chat-message.user {
+        justify-content: flex-end;
+    }
+
+    .chat-message-content {
+        max-width: 80%;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        word-wrap: break-word;
+    }
+
+    .chat-message.assistant .chat-message-content {
+        background: #e8f0ff;
+        color: #333;
+    }
+
+    .chat-message.user .chat-message-content {
+        background: #4a90e2;
+        color: white;
+    }
+
+    .chat-message.system .chat-message-content {
+        background: #fff3cd;
+        color: #856404;
+        width: 100%;
+    }
+
+    .investment-recommendation {
+        background: #f0f8ff;
+        border-left: 4px solid #4a90e2;
+        padding: 0.75rem;
+        margin-top: 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.9rem;
+    }
+
+    .investment-recommendation.buy {
+        background: #d4edda;
+        border-left-color: #28a745;
+        color: #155724;
+    }
+
+    .investment-recommendation.hold {
+        background: #fff3cd;
+        border-left-color: #ffc107;
+        color: #856404;
+    }
+
+    .investment-recommendation.sell {
+        background: #f8d7da;
+        border-left-color: #dc3545;
+        color: #721c24;
+    }
+
+    .chat-input-area {
+        padding: 1rem;
+        border-top: 1px solid #e0e0e0;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .chat-input-area input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 0.25rem;
+        font-size: 1rem;
+    }
+
+    .chat-input-area button {
+        padding: 0.75rem 1.5rem;
+        background: #4a90e2;
+        color: white;
+        border: none;
+        border-radius: 0.25rem;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.3s ease;
+    }
+
+    .chat-input-area button:hover {
+        background: #2e5c8a;
+    }
+
+    .chat-input-area button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #4a90e2;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .creators-section {
+        margin-top: 1.5rem;
+    }
+
+    .creators-header {
+        font-size: 0.95rem;
+        color: #666;
+        margin-bottom: 1rem;
+        font-style: italic;
+    }
+
+    .creators-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+
+    .creator-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .creator-name {
+        font-weight: 500;
+        color: #333;
+    }
+
+    .creator-email-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        background: #4a90e2;
+        border-radius: 50%;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .creator-email-link:hover {
+        background: #2e5c8a;
+        transform: scale(1.1);
+    }
+
+    .creator-email-link svg {
+        width: 14px;
+        height: 14px;
+        fill: white;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -14,10 +268,35 @@
         <div>
             <span class="hero-kicker">Monitor financiero</span>
             <h1>Panel TRM</h1>
-            <p class="meta">Explora el comportamiento del dólar con una experiencia renovada, enfocada en análisis y acción rápida.</p>
-            <div class="actions">
-                <a class="btn btn-primary" href="{{ url_for('prediction.prediction_page') }}">Iniciar predicción</a>
-                <a class="btn btn-secondary" href="{{ url_for('prediction.visualizations_page') }}">Ir a visualizaciones</a>
+            <p class="meta">Sistema inteligente de predicción de la Tasa de Cambio Representativa del Mercado (TRM) usando modelos de Machine Learning y simulación de Monte Carlo. Analiza tendencias históricas, genera pronósticos precisos y obtención de recomendaciones de inversión basadas en IA. (Recuerda actualizar datos en la pestaña de Datos antes de visualizar o correr los modelos y el chat para obtener la última actualización)</p>
+            <div class="creators-section">
+                <p class="creators-header">Creadores del proyecto asistidos por Claude</p>
+                <div class="creators-list">
+                    <div class="creator-item">
+                        <span class="creator-name">Jhon Patiño</span>
+                        <a href="mailto:jhon.patino06@gmail.com" class="creator-email-link" title="Enviar correo a Jhon Patiño">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        </a>
+                    </div>
+                    <div class="creator-item">
+                        <span class="creator-name">Javier Ortiz</span>
+                        <a href="mailto:javifelipeortiz@gmail.com" class="creator-email-link" title="Enviar correo a Javier Ortiz">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        </a>
+                    </div>
+                    <div class="creator-item">
+                        <span class="creator-name">Angie Perez</span>
+                        <a href="mailto:angie.perez09@uptc.edu.co" class="creator-email-link" title="Enviar correo a Angie Perez">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        </a>
+                    </div>
+                    <div class="creator-item">
+                        <span class="creator-name">Manuel Quintero</span>
+                        <a href="mailto:manuel.quintero@uptc.edu.co" class="creator-email-link" title="Enviar correo a Manuel Quintero">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
         <section class="stats-grid compact-grid">
@@ -40,14 +319,39 @@
         </section>
     </section>
 
-    <div class="card">
-        <h3>Accesos rápidos</h3>
-        <div class="actions action-grid">
-            <a class="btn btn-primary" href="{{ url_for('prediction.prediction_page') }}">Ir a Predicción</a>
-            <a class="btn btn-secondary" href="{{ url_for('prediction.data_page') }}">Ir a Datos</a>
-            <a class="btn btn-secondary" href="{{ url_for('prediction.eda_page') }}">Ir a EDA</a>
-            <a class="btn btn-secondary" href="{{ url_for('prediction.visualizations_page') }}">Ir a Visualizaciones</a>
+    <!-- Sección de Chat con LLM -->
+    <div class="card llm-section">
+        <h3>🤖 Asistente de Predicciones</h3>
+        <p class="meta">Consulta con un modelo de IA sobre las predicciones de TRM. El asistente te proporciona análisis y recomendaciones de inversión.</p>
+        
+        <div class="llm-container">
+            <!-- Selector de Modelos -->
+            <div class="model-selector" id="modelSelector">
+                <!-- Cargado dinámicamente por JavaScript -->
+            </div>
+
+            <!-- Interfaz de Chat -->
+            <div class="chat-interface">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-message system">
+                        <div class="chat-message-content">
+                            👋 Selecciona un modelo de IA a la izquierda y escribe tu pregunta sobre las predicciones de TRM.
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input 
+                        type="text" 
+                        id="chatInput" 
+                        placeholder="¿Qué deseas saber sobre la TRM?" 
+                        disabled
+                    >
+                    <button id="chatSendBtn" disabled>Enviar</button>
+                </div>
+            </div>
         </div>
     </div>
 </main>
+
+<script src="{{ url_for('static', filename='js/llm-chat.js') }}"></script>
 {% endblock %}

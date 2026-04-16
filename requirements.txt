@@ -2,3 +2,5 @@ flask
 numpy
 scikit-learn
 mlflow
+openai
+python-dotenv

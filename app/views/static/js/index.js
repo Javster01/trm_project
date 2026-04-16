@@ -90,11 +90,11 @@ function renderBacktestChart(containerId, series) {
     }
 
     const width = Math.max(1180, Math.floor((container.clientWidth || 1180) - 2));
-    const height = 320;
-    const padL = 48;
+    const height = 380;
+    const padL = 52;
     const padR = 20;
-    const padT = 18;
-    const padB = 42;
+    const padT = 20;
+    const padB = 80;
     const actualValues = series.map(point => Number(point.actual));
     const predictedValues = series.map(point => Number(point.predicted));
     const domain = getChartDomain([...actualValues, ...predictedValues]);
@@ -151,10 +151,13 @@ function renderBacktestChart(containerId, series) {
                 </circle>
             `).join("")}
             ${series.map((point, index) => {
-                if (index % 2 !== 0 && index !== series.length - 1) return "";
+                const interval = Math.max(1, Math.ceil(series.length / 8));
+                if (index % interval !== 0 && index !== series.length - 1) return "";
                 const x = xFor(index);
-                return `<text x="${x.toFixed(2)}" y="${height - 10}" fill="#64748b" font-size="10" text-anchor="middle">${point.date}</text>`;
+                return `<text x="${x.toFixed(2)}" y="${height - 25}" fill="#64748b" font-size="9" text-anchor="middle">${point.date}</text>`;
             }).join("")}
+            <text x="${(width / 2)}" y="${height - 3}" fill="#475569" font-size="11" font-weight="bold">Fecha</text>
+            <text x="8" y="${padT + 10}" fill="#475569" font-size="11" font-weight="bold" transform="rotate(-90 8 ${padT + 10})">Valor TRM</text>
         </svg>
     `;
 }
@@ -170,11 +173,11 @@ function renderForecastComparisonChart(containerId, historySeries, rfProjection,
     }
 
     const width = Math.max(1180, Math.floor((container.clientWidth || 1180) - 2));
-    const height = 320;
-    const padL = 48;
+    const height = 360;
+    const padL = 52;
     const padR = 24;
     const padT = 20;
-    const padB = 46;
+    const padB = 70;
     const historyValues = history.map(row => Number(row.avg));
     const domain = getChartDomain([...historyValues, Number(rfProjection), Number(mcProjection)]);
     const usableW = width - padL - padR - 72;
@@ -235,11 +238,13 @@ function renderForecastComparisonChart(containerId, historySeries, rfProjection,
             <text x="${futureX.toFixed(2)}" y="${height - 12}" fill="#64748b" font-size="10" text-anchor="middle">Próx. mes</text>
             ${points.map((point, index) => {
                 if (index % 2 !== 0 && index !== points.length - 1) return "";
-                return `<text x="${point.x.toFixed(2)}" y="${height - 12}" fill="#64748b" font-size="10" text-anchor="middle">${point.row.period}</text>`;
+                return `<text x="${point.x.toFixed(2)}" y="${height - 20}" fill="#64748b" font-size="9" text-anchor="middle">${point.row.period}</text>`;
             }).join("")}
             <text x="${padL}" y="${padT - 4}" fill="#2563eb" font-size="11">Histórico mensual</text>
             <text x="${padL + 170}" y="${padT - 4}" fill="#b45309" font-size="11">RF</text>
             <text x="${padL + 230}" y="${padT - 4}" fill="#0f766e" font-size="11">Monte Carlo</text>
+            <text x="${(width / 2)}" y="${height - 3}" fill="#475569" font-size="11" font-weight="bold">Período (Mes-Año)</text>
+            <text x="8" y="${padT + 10}" fill="#475569" font-size="11" font-weight="bold" transform="rotate(-90 8 ${padT + 10})">Valor TRM</text>
         </svg>
     `;
 }
@@ -254,11 +259,11 @@ function renderMonteCarloHistogram(containerId, scenarios, rfProjection, mcProje
     }
 
     const width = Math.max(1180, Math.floor((container.clientWidth || 1180) - 2));
-    const height = 320;
-    const padL = 48;
+    const height = 380;
+    const padL = 52;
     const padR = 22;
     const padT = 20;
-    const padB = 40;
+    const padB = 80;
     const bins = 20;
     const min = Math.min(...scenarios, Number(rfProjection), Number(mcProjection));
     const max = Math.max(...scenarios, Number(rfProjection), Number(mcProjection));
@@ -322,8 +327,10 @@ function renderMonteCarloHistogram(containerId, scenarios, rfProjection, mcProje
             ${[0, 0.25, 0.5, 0.75, 1].map(ratio => {
                 const value = min + ratio * range;
                 const x = xFor(value);
-                return `<text x="${x.toFixed(2)}" y="${height - 10}" fill="#64748b" font-size="10" text-anchor="middle">${formatTrm(value)}</text>`;
+                return `<text x="${x.toFixed(2)}" y="${height - 25}" fill="#64748b" font-size="9" text-anchor="middle">${formatTrm(value)}</text>`;
             }).join("")}
+            <text x="${(width / 2)}" y="${height - 3}" fill="#475569" font-size="11" font-weight="bold">Valor TRM (COP)</text>
+            <text x="8" y="${padT + 10}" fill="#475569" font-size="11" font-weight="bold" transform="rotate(-90 8 ${padT + 10})">Escenarios</text>
         </svg>
     `;
 }
