@@ -3,6 +3,32 @@
     <div id="edaMeta" class="meta">
         Rango: {{ initial_eda.meta.start_date }} a {{ initial_eda.meta.end_date }} · Registros: {{ initial_eda.meta.count }}
     </div>
+
+    <div class="controls-grid" id="edaFilters">
+        <label class="control-field">
+            <span>Fecha desde</span>
+            <input type="date" id="edaFilterStartDate">
+        </label>
+        <label class="control-field">
+            <span>Fecha hasta</span>
+            <input type="date" id="edaFilterEndDate">
+        </label>
+        <label class="control-field">
+            <span>Ventana mensual</span>
+            <select id="edaMonthlyWindow">
+                <option value="6" selected>6 meses</option>
+                <option value="12">12 meses</option>
+                <option value="24">24 meses</option>
+                <option value="0">Todo</option>
+            </select>
+        </label>
+    </div>
+
+    <div class="actions compact-actions">
+        <button class="btn btn-secondary" id="applyEdaFiltersBtn">Aplicar filtros EDA</button>
+        <button class="btn btn-primary" id="resetEdaFiltersBtn">Limpiar filtros EDA</button>
+    </div>
+
     <div id="edaStats" class="stats-grid">
         <div class="stat-item">
             <span class="stat-label">Media</span>
@@ -29,6 +55,7 @@
             <div id="edaTrendMeta" class="meta">
                 Dirección: {{ initial_eda_summary.trend.direction }} · Cambio: {{ initial_eda_summary.trend.percent_change }}
             </div>
+            <div id="edaSelectedPoint" class="meta">Selecciona un punto en la gráfica para ver detalle.</div>
         </div>
 
         <div class="sub-card" id="edaLatestCard">

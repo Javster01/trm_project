@@ -10,33 +10,39 @@
 <main class="page-container" data-page="home">
     {% include 'partials/_top_nav.html' %}
 
-    <section class="hero">
-        <h1>Panel TRM</h1>
-        <p class="meta">Navega por páginas separadas para Predicción, Datos y EDA.</p>
-    </section>
-
-    <section class="stats-grid">
-        <div class="stat-item">
-            <span class="stat-label">Total registros</span>
-            <strong class="stat-value">{{ total_count }}</strong>
+    <section class="hero hero-split">
+        <div>
+            <span class="hero-kicker">Monitor financiero</span>
+            <h1>Panel TRM</h1>
+            <p class="meta">Explora el comportamiento del dólar con una experiencia renovada, enfocada en análisis y acción rápida.</p>
+            <div class="actions">
+                <a class="btn btn-primary" href="{{ url_for('prediction.prediction_page') }}">Iniciar predicción</a>
+                <a class="btn btn-secondary" href="{{ url_for('prediction.visualizations_page') }}">Ir a visualizaciones</a>
+            </div>
         </div>
-        <div class="stat-item">
-            <span class="stat-label">Última fecha</span>
-            <strong class="stat-value">{{ latest_date }}</strong>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">Último valor</span>
-            <strong class="stat-value">{{ latest_value }}</strong>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">Tendencia</span>
-            <strong class="stat-value">{{ trend_direction }}</strong>
-        </div>
+        <section class="stats-grid compact-grid">
+            <div class="stat-item">
+                <span class="stat-label">Total registros</span>
+                <strong class="stat-value">{{ total_count }}</strong>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Última fecha</span>
+                <strong class="stat-value">{{ latest_date }}</strong>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Último valor</span>
+                <strong class="stat-value">{{ latest_value }}</strong>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Tendencia</span>
+                <strong class="stat-value">{{ trend_direction }}</strong>
+            </div>
+        </section>
     </section>
 
     <div class="card">
         <h3>Accesos rápidos</h3>
-        <div class="actions">
+        <div class="actions action-grid">
             <a class="btn btn-primary" href="{{ url_for('prediction.prediction_page') }}">Ir a Predicción</a>
             <a class="btn btn-secondary" href="{{ url_for('prediction.data_page') }}">Ir a Datos</a>
             <a class="btn btn-secondary" href="{{ url_for('prediction.eda_page') }}">Ir a EDA</a>

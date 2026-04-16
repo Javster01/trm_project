@@ -10,20 +10,41 @@
 <main class="page-container" data-page="prediction">
     {% include 'partials/_top_nav.html' %}
 
-    <section class="hero">
-        <h1>Predicción TRM</h1>
-        <p class="meta">Ejecuta predicción y revisa resumen estadístico base.</p>
-        <div class="actions">
-            <button class="btn btn-primary" onclick="getPrediction()">Predecir</button>
+    <section class="hero hero-split">
+        <div>
+            <span class="hero-kicker">Modelo predictivo</span>
+            <h1>Predicción TRM</h1>
+            <p class="meta">Ejecuta una predicción instantánea y contrástala con el análisis inicial del conjunto histórico.</p>
+        </div>
+        <div class="hero-panel">
+            <p class="meta">Lanza el modelo y revisa la salida en tiempo real.</p>
+            <div class="actions compact-actions">
+                <button class="btn btn-primary" onclick="getPrediction()">Predecir ahora</button>
+            </div>
         </div>
     </section>
 
-    <div class="card">
-        <h3>Resumen inicial</h3>
-        <pre id="initialAnalysis">{{ initial_analysis | tojson(indent=2) }}</pre>
-    </div>
+    <section class="content-grid">
+        {% include 'partials/_prediction_result.html' %}
+    </section>
 
-    {% include 'partials/_prediction_result.html' %}
+    <section class="content-grid">
+        <div class="card prediction-method-card">
+            <h3>Método: Random Forest + Monte Carlo</h3>
+            <p class="meta">El modelo combina dos técnicas: Random Forest aprende patrones de calendario, Monte Carlo simula incertidumbre. Se comparan ambas proyecciones para validar confiabilidad.</p>
+
+            <div class="info-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                <div class="info-box" style="padding: 1rem; background: #f8fafc; border-radius: 8px; border-left: 3px solid #0f766e;">
+                    <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem;">Random Forest</h4>
+                    <p class="meta" style="margin: 0; font-size: 0.85rem;">Proyecta con variables calendario: día, mes, año. Usa histórico para aprender patrones recurrentes.</p>
+                </div>
+                <div class="info-box" style="padding: 1rem; background: #f8fafc; border-radius: 8px; border-left: 3px solid #b45309;">
+                    <h4 style="margin: 0 0 0.5rem 0; font-size: 0.95rem;">Monte Carlo</h4>
+                    <p class="meta" style="margin: 0; font-size: 0.85rem;">Simula 1000 escenarios usando media y desviación de cambios históricos. Captura incertidumbre.</p>
+                </div>
+            </div>
+        </div>
+    </section>
 </main>
 {% endblock %}
 

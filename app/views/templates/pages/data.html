@@ -10,11 +10,17 @@
 <main class="page-container" data-page="data">
     {% include 'partials/_top_nav.html' %}
 
-    <section class="hero">
-        <h1>Datos TRM</h1>
-        <p class="meta">Visualiza y refresca los datos cargados desde el data loader.</p>
-        <div class="actions">
-            <button class="btn btn-secondary" onclick="loadData()">Actualizar datos</button>
+    <section class="hero hero-split">
+        <div>
+            <span class="hero-kicker">Repositorio de datos</span>
+            <h1>Datos TRM</h1>
+            <p class="meta">Filtra por fecha y rango de valor para inspeccionar el histórico con mayor precisión.</p>
+        </div>
+        <div class="hero-panel">
+            <p class="meta">Actualiza la fuente para refrescar resultados y tablas.</p>
+            <div class="actions compact-actions">
+                <button class="btn btn-secondary" onclick="loadData()">Actualizar datos</button>
+            </div>
         </div>
     </section>
 

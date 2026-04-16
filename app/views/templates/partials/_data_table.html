@@ -1,6 +1,41 @@
 <div class="card">
     <h3>Datos cargados</h3>
     <div id="dataMeta" class="meta">Total de registros cargados: {{ initial_count }}</div>
+
+    <div class="controls-grid" id="dataFilters">
+        <label class="control-field">
+            <span>Fecha desde</span>
+            <input type="date" id="dataFilterStartDate">
+        </label>
+        <label class="control-field">
+            <span>Fecha hasta</span>
+            <input type="date" id="dataFilterEndDate">
+        </label>
+        <label class="control-field">
+            <span>TRM mínimo</span>
+            <input type="number" step="0.01" id="dataFilterMinTrm" placeholder="Ej: 3800">
+        </label>
+        <label class="control-field">
+            <span>TRM máximo</span>
+            <input type="number" step="0.01" id="dataFilterMaxTrm" placeholder="Ej: 4200">
+        </label>
+        <label class="control-field">
+            <span>Filas visibles</span>
+            <select id="dataFilterLimit">
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200" selected>200</option>
+                <option value="500">500</option>
+                <option value="0">Todas</option>
+            </select>
+        </label>
+    </div>
+
+    <div class="actions compact-actions">
+        <button class="btn btn-secondary" id="applyDataFiltersBtn">Aplicar filtros</button>
+        <button class="btn btn-primary" id="resetDataFiltersBtn">Limpiar filtros</button>
+    </div>
+
     <table>
         <thead>
             <tr>

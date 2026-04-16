@@ -10,11 +10,17 @@
 <main class="page-container" data-page="eda">
     {% include 'partials/_top_nav.html' %}
 
-    <section class="hero">
-        <h1>Análisis Exploratorio (EDA)</h1>
-        <p class="meta">Revisa métricas, tendencia y resúmenes temporalmente agregados.</p>
-        <div class="actions">
-            <button class="btn btn-secondary" onclick="loadEda(true)">Actualizar EDA</button>
+    <section class="hero hero-split">
+        <div>
+            <span class="hero-kicker">Exploración estadística</span>
+            <h1>Análisis Exploratorio (EDA)</h1>
+            <p class="meta">Consulta tendencias, distribución y señales de volatilidad en una vista consolidada.</p>
+        </div>
+        <div class="hero-panel">
+            <p class="meta">Sincroniza métricas y resumen técnico con la fuente más reciente.</p>
+            <div class="actions compact-actions">
+                <button class="btn btn-secondary" onclick="loadEda(true)">Actualizar EDA</button>
+            </div>
         </div>
     </section>
 

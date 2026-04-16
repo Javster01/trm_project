@@ -1,10 +1,8 @@
 from flask import Blueprint, render_template, jsonify
-from models.analysis import get_analysis, get_eda
-from models.random_forest import predict_trm
-from models.monte_carlo import simulate_trm
-from models.llm_integration import get_recommendation
-from models.data_loader import load_trm_data
-from models.visualization import get_last_36_months_visualization
+from ..models.analysis import get_analysis, get_eda
+from ..models.data_loader import load_trm_data
+from ..models.visualization import get_last_36_months_visualization
+from ..models.prediction_service import build_prediction_dashboard
 
 prediction_bp = Blueprint('prediction', __name__)
 
@@ -145,17 +143,7 @@ def visualizations_page():
 
 @prediction_bp.route("/predict")
 def predict():
-    analysis = get_analysis()
-    prediction = predict_trm()
-    simulation = simulate_trm()
-    recommendation = get_recommendation(prediction)
-
-    return jsonify({
-        "analysis": analysis,
-        "prediction": prediction,
-        "simulation": simulation,
-        "recommendation": recommendation
-    })
+    return jsonify(build_prediction_dashboard())
 
 
 @prediction_bp.route("/data")

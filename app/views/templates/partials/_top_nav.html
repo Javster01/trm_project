@@ -1,7 +1,13 @@
-<nav class="top-nav">
-    <a href="{{ url_for('prediction.home_page') }}" class="nav-link {% if current_page == 'home' %}active{% endif %}">Inicio</a>
-    <a href="{{ url_for('prediction.prediction_page') }}" class="nav-link {% if current_page == 'prediction' %}active{% endif %}">Predicción</a>
-    <a href="{{ url_for('prediction.data_page') }}" class="nav-link {% if current_page == 'data' %}active{% endif %}">Datos</a>
-    <a href="{{ url_for('prediction.eda_page') }}" class="nav-link {% if current_page == 'eda' %}active{% endif %}">EDA</a>
-    <a href="{{ url_for('prediction.visualizations_page') }}" class="nav-link {% if current_page == 'visualizations' %}active{% endif %}">Visualizaciones</a>
-</nav>
+<header class="top-nav">
+    <a href="{{ url_for('prediction.home_page') }}" class="nav-brand">
+        <span class="nav-brand-dot"></span>
+        <span>TRM Pulse</span>
+    </a>
+    <nav class="nav-links" aria-label="Navegación principal">
+        <a href="{{ url_for('prediction.home_page') }}" class="nav-link {% if current_page == 'home' %}active{% endif %}">Inicio</a>
+        <a href="{{ url_for('prediction.prediction_page') }}" class="nav-link {% if current_page == 'prediction' %}active{% endif %}">Predicción</a>
+        <a href="{{ url_for('prediction.data_page') }}" class="nav-link {% if current_page == 'data' %}active{% endif %}">Datos</a>
+        <a href="{{ url_for('prediction.eda_page') }}" class="nav-link {% if current_page == 'eda' %}active{% endif %}">EDA</a>
+        <a href="{{ url_for('prediction.visualizations_page') }}" class="nav-link {% if current_page == 'visualizations' %}active{% endif %}">Visualizaciones</a>
+    </nav>
+</header>

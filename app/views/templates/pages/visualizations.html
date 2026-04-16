@@ -10,62 +10,80 @@
 <main class="page-container" data-page="visualizations">
     {% include 'partials/_top_nav.html' %}
 
-    <section class="hero">
-        <h1>Visualizaciones TRM</h1>
-        <p class="meta">Comportamiento de la TRM en los últimos 36 meses.</p>
+    <section class="hero hero-split">
+        <div>
+            <span class="hero-kicker">Exploración visual</span>
+            <h1>Visualizaciones TRM</h1>
+            <p class="meta">Analiza la evolución mensual con filtros, ventanas rápidas y selección puntual en la curva.</p>
+        </div>
+        <div class="hero-panel">
+            <p class="meta">Ajusta la serie, rango temporal y métrica para enfocarte en los cambios clave.</p>
+        </div>
     </section>
+
+    <div class="card">
+        <h3>Panel interactivo</h3>
+        <div class="controls-grid" id="visualFilters">
+            <label class="control-field">
+                <span>Tipo de serie</span>
+                <select id="visualMetricSelect">
+                    <option value="avg" selected>Promedio mensual</option>
+                    <option value="movingAvg">Media móvil 3M</option>
+                    <option value="changeAbs">Cambio absoluto mensual</option>
+                    <option value="changePct">Cambio porcentual mensual</option>
+                    <option value="indexBase">Índice base 100</option>
+                </select>
+            </label>
+            <label class="control-field">
+                <span>Periodo desde</span>
+                <input type="date" id="visualFilterStartDate">
+            </label>
+            <label class="control-field">
+                <span>Periodo hasta</span>
+                <input type="date" id="visualFilterEndDate">
+            </label>
+            <label class="control-field">
+                <span>Rango rápido</span>
+                <select id="visualQuickWindow">
+                    <option value="12">Últimos 12 meses</option>
+                    <option value="24">Últimos 24 meses</option>
+                    <option value="36" selected>Últimos 36 meses</option>
+                    <option value="0">Todo</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="actions compact-actions">
+            <button class="btn btn-secondary" id="applyVisualFiltersBtn">Aplicar filtros</button>
+            <button class="btn btn-primary" id="resetVisualFiltersBtn">Restablecer</button>
+        </div>
+
+        <div class="chart-wrap" id="visualChartContainer"></div>
+        <div id="visualSelectionMeta" class="meta">Haz clic en un punto para inspeccionar el dato exacto.</div>
+        <div id="visualPointDetail" class="stats-grid"></div>
+    </div>
 
     <section class="stats-grid">
         <div class="stat-item">
             <span class="stat-label">Meses analizados</span>
-            <strong class="stat-value">{{ visual.count_months }}</strong>
+            <strong class="stat-value" id="visualCountMonths">{{ visual.count_months }}</strong>
         </div>
         <div class="stat-item">
             <span class="stat-label">Periodo inicio</span>
-            <strong class="stat-value">{{ visual.start_period or '-' }}</strong>
+            <strong class="stat-value" id="visualStartPeriod">{{ visual.start_period or '-' }}</strong>
         </div>
         <div class="stat-item">
             <span class="stat-label">Periodo fin</span>
-            <strong class="stat-value">{{ visual.end_period or '-' }}</strong>
+            <strong class="stat-value" id="visualEndPeriod">{{ visual.end_period or '-' }}</strong>
         </div>
         <div class="stat-item">
             <span class="stat-label">Último promedio mensual</span>
-            <strong class="stat-value">{{ latest_avg_display }}</strong>
+            <strong class="stat-value" id="visualLatestAvg">{{ latest_avg_display }}</strong>
         </div>
     </section>
 
     <div class="card">
-        <h3>Tendencia mensual promedio (36 meses)</h3>
-        <div class="chart-wrap">{{ visual.line_svg | safe }}</div>
-    </div>
-
-    <div class="card">
-        <h3>Promedio mensual vs media móvil (3M)</h3>
-        <div class="chart-wrap">{{ visual.moving_avg_svg | safe }}</div>
-    </div>
-
-    <div class="card">
-        <h3>Variación mensual (mes contra mes)</h3>
-        <div class="chart-wrap">{{ visual.change_svg | safe }}</div>
-    </div>
-
-    <div class="card">
-        <h3>Índice base 100 y suavizado</h3>
-        <div class="chart-wrap">{{ visual.index_base_svg | safe }}</div>
-    </div>
-
-    <div class="card">
-        <h3>Estacionalidad mensual (promedio por mes calendario)</h3>
-        <div class="chart-wrap">{{ visual.seasonality_svg | safe }}</div>
-    </div>
-
-    <div class="card">
-        <h3>Distribución de promedios mensuales</h3>
-        <div class="chart-wrap">{{ visual.distribution_svg | safe }}</div>
-    </div>
-
-    <div class="card">
-        <h3>Serie mensual (últimos 36)</h3>
+        <h3>Serie mensual filtrada</h3>
         <table>
             <thead>
                 <tr>
@@ -75,7 +93,7 @@
                     <th>% mensual</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="visualSeriesBody">
                 {% for row in visual.series %}
                 <tr>
                     <td>{{ row.period }}</td>
@@ -88,4 +106,11 @@
         </table>
     </div>
 </main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+window.initialVisualSeries = {{ visual.series | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
 {% endblock %}

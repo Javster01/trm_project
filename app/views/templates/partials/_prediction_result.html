@@ -1,1 +1,32 @@
-<pre id="result"></pre>
+<div class="card prediction-dashboard">
+	<div class="prediction-head">
+		<div>
+			<h3>Dashboard de predicción</h3>
+			<p class="meta">Random Forest y Monte Carlo se calculan juntos para comparar proyección, dispersión y ajuste histórico.</p>
+		</div>
+		<div id="predictionStatus" class="meta">Presiona “Predecir ahora” para ejecutar el modelo.</div>
+	</div>
+
+	<div id="predictionKpis" class="stats-grid"></div>
+
+	<div class="prediction-panels">
+		<div class="sub-card">
+			<h4>Random Forest: backtest y variables</h4>
+			<div id="predictionRfChart" class="chart-wrap mini-chart"></div>
+			<div id="predictionFeatureImportance" class="feature-bars"></div>
+			<div id="predictionRfDetail" class="meta"></div>
+		</div>
+
+		<div class="sub-card">
+			<h4>Monte Carlo: 1000 escenarios</h4>
+			<div id="predictionMonteCarloChart" class="chart-wrap mini-chart"></div>
+			<div id="predictionMonteCarloDetail" class="meta"></div>
+		</div>
+	</div>
+
+	<div class="sub-card">
+		<h4>Comparación integrada</h4>
+		<div id="predictionComparisonChart" class="chart-wrap"></div>
+		<div id="predictionNarrative" class="meta"></div>
+	</div>
+</div>
