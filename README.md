@@ -48,6 +48,18 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+3. Configurar variables de entorno:
+```bash
+cp .env.example .env
+```
+
+Edita el archivo `.env` y agrega tu API Key de OpenRouter:
+```
+OPENROUTER_API_KEY=tu_api_key_aqui
+```
+
+Obtén tu API Key en: [https://openrouter.ai](https://openrouter.ai)
+
 ## Ejecución
 
 ### Opción 1: Script automático (Recomendado)
