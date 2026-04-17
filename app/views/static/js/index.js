@@ -335,6 +335,229 @@ function renderMonteCarloHistogram(containerId, scenarios, rfProjection, mcProje
     `;
 }
 
+function renderResidualsHistogram(containerId, testSeries, rfMetrics = {}) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!testSeries || !testSeries.length) {
+        container.innerHTML = '<div class="meta">No hay residuos (test) para mostrar.</div>';
+        const detailEl = document.getElementById("predictionResidualsDetail");
+        if (detailEl) detailEl.innerText = '';
+        return;
+    }
+
+    const points = testSeries.map((s, index) => ({
+        index,
+        date: s.date,
+        error: Number(s.error),
+    }));
+    const errors = points.map(p => p.error);
+    const width = Math.max(900, Math.floor((container.clientWidth || 900) - 2));
+    const height = 300;
+    const padL = 52;
+    const padR = 24;
+    const padT = 20;
+    const padB = 72;
+    const usableW = width - padL - padR;
+    const usableH = height - padT - padB;
+
+    const meanError = errors.reduce((a, b) => a + b, 0) / errors.length;
+    const yDomain = getChartDomain([...errors, 0, meanError], 0.1);
+
+    const xFor = idx => padL + (idx * usableW) / Math.max(points.length - 1, 1);
+    const yFor = value => padT + ((yDomain.max - value) * usableH) / yDomain.range;
+
+    const chartPoints = points.map(point => ({
+        ...point,
+        x: xFor(point.index),
+        y: yFor(point.error),
+    }));
+    const polyline = chartPoints.map(point => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(" ");
+    const zeroY = yFor(0);
+    const meanY = yFor(meanError);
+
+    const grid = [0, 0.25, 0.5, 0.75, 1].map(ratio => {
+        const y = padT + ratio * usableH;
+        const value = yDomain.max - ratio * yDomain.range;
+        return `
+            <line x1="${padL}" y1="${y.toFixed(2)}" x2="${width - padR}" y2="${y.toFixed(2)}" stroke="#e5e7eb" stroke-width="1"></line>
+            <text x="10" y="${(y + 4).toFixed(2)}" fill="#64748b" font-size="10">${value.toFixed(0)}</text>
+        `;
+    }).join("");
+
+    const hoverRects = chartPoints.map((point, index) => {
+        const currentX = point.x;
+        const prevX = index > 0 ? chartPoints[index - 1].x : padL;
+        const nextX = index < chartPoints.length - 1 ? chartPoints[index + 1].x : (width - padR);
+        const left = index === 0 ? padL : (prevX + currentX) / 2;
+        const right = index === chartPoints.length - 1 ? (width - padR) : (currentX + nextX) / 2;
+        const rectW = Math.max(6, right - left);
+        return `
+            <rect x="${left.toFixed(2)}" y="${padT}" width="${rectW.toFixed(2)}" height="${usableH.toFixed(2)}" fill="transparent">
+                <title>${point.date || `Obs ${index + 1}`}\nError: ${point.error.toFixed(2)}</title>
+            </rect>
+        `;
+    }).join("");
+
+    container.innerHTML = `
+        <svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Curva de residuos (error = actual - predicho)">
+            ${grid}
+            <line x1="${padL}" y1="${height - padB}" x2="${width - padR}" y2="${height - padB}" stroke="#64748b" stroke-width="1.2"></line>
+            ${hoverRects}
+            <line x1="${padL}" y1="${zeroY.toFixed(2)}" x2="${width - padR}" y2="${zeroY.toFixed(2)}" stroke="#0f172a" stroke-width="1.4" stroke-dasharray="4 4"></line>
+            <line x1="${padL}" y1="${meanY.toFixed(2)}" x2="${width - padR}" y2="${meanY.toFixed(2)}" stroke="#b45309" stroke-width="1.4" stroke-dasharray="6 4"></line>
+            <polyline points="${polyline}" fill="none" stroke="#1d4ed8" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"></polyline>
+            ${chartPoints.map(point => `
+                <circle cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="3.6" fill="#1d4ed8">
+                    <title>${point.date || ""} | Error: ${point.error.toFixed(2)}</title>
+                </circle>
+            `).join("")}
+            ${chartPoints.map((point, index) => {
+                const interval = Math.max(1, Math.ceil(chartPoints.length / 8));
+                if (index % interval !== 0 && index !== chartPoints.length - 1) return "";
+                return `<text x="${point.x.toFixed(2)}" y="${height - 26}" fill="#64748b" font-size="9" text-anchor="middle">${point.date || `Obs ${index + 1}`}</text>`;
+            }).join("")}
+            <text x="${padL + 6}" y="${(zeroY - 6).toFixed(2)}" fill="#0f172a" font-size="10">Cero (sin sesgo)</text>
+            <text x="${padL + 6}" y="${(meanY - 6).toFixed(2)}" fill="#b45309" font-size="10">Media error</text>
+            <text x="${(width / 2)}" y="${height - 3}" fill="#475569" font-size="11" font-weight="bold">Observaciones de test</text>
+            <text x="8" y="${padT + 10}" fill="#475569" font-size="11" font-weight="bold" transform="rotate(-90 8 ${padT + 10})">Error (COP)</text>
+        </svg>
+    `;
+
+    const detailEl = document.getElementById("predictionResidualsDetail");
+    if (detailEl) {
+        const mae = rfMetrics.mae !== undefined ? formatTrm(Number(rfMetrics.mae)) : "-";
+        const rmse = rfMetrics.rmse !== undefined ? formatTrm(Number(rfMetrics.rmse)) : "-";
+        detailEl.innerText = `Sesgo medio: ${meanError.toFixed(2)} · MAE: ${mae} · RMSE: ${rmse} · Mientras más cerca de 0 esté la curva, mayor exactitud.`;
+    }
+}
+
+function renderMonteCarloResidualsCurve(containerId, testSeries, mcMetrics = {}) {
+    const container = document.getElementById(containerId);
+    const detailEl = document.getElementById("predictionMonteCarloResidualsDetail");
+    if (!container) return;
+
+    if (!testSeries || !testSeries.length) {
+        container.innerHTML = '<div class="meta">No hay backtest disponible para Monte Carlo.</div>';
+        if (detailEl) detailEl.innerText = "";
+        return;
+    }
+
+    const series = testSeries.slice(-220);
+    const points = series.map((s, index) => ({
+        index,
+        date: s.date,
+        error: Number(s.error),
+    }));
+    const errors = points.map(p => p.error);
+
+    const width = Math.max(900, Math.floor((container.clientWidth || 900) - 2));
+    const height = 300;
+    const padL = 52;
+    const padR = 24;
+    const padT = 20;
+    const padB = 72;
+    const usableW = width - padL - padR;
+    const usableH = height - padT - padB;
+
+    const meanError = errors.reduce((a, b) => a + b, 0) / errors.length;
+    const yDomain = getChartDomain([...errors, 0, meanError], 0.1);
+
+    const xFor = idx => padL + (idx * usableW) / Math.max(points.length - 1, 1);
+    const yFor = value => padT + ((yDomain.max - value) * usableH) / yDomain.range;
+
+    const chartPoints = points.map(point => ({
+        ...point,
+        x: xFor(point.index),
+        y: yFor(point.error),
+    }));
+
+    const polyline = chartPoints.map(point => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(" ");
+    const zeroY = yFor(0);
+    const meanY = yFor(meanError);
+
+    const grid = [0, 0.25, 0.5, 0.75, 1].map(ratio => {
+        const y = padT + ratio * usableH;
+        const value = yDomain.max - ratio * yDomain.range;
+        return `
+            <line x1="${padL}" y1="${y.toFixed(2)}" x2="${width - padR}" y2="${y.toFixed(2)}" stroke="#e5e7eb" stroke-width="1"></line>
+            <text x="10" y="${(y + 4).toFixed(2)}" fill="#64748b" font-size="10">${value.toFixed(0)}</text>
+        `;
+    }).join("");
+
+    const hoverRects = chartPoints.map((point, index) => {
+        const currentX = point.x;
+        const prevX = index > 0 ? chartPoints[index - 1].x : padL;
+        const nextX = index < chartPoints.length - 1 ? chartPoints[index + 1].x : (width - padR);
+        const left = index === 0 ? padL : (prevX + currentX) / 2;
+        const right = index === chartPoints.length - 1 ? (width - padR) : (currentX + nextX) / 2;
+        const rectW = Math.max(6, right - left);
+        return `
+            <rect x="${left.toFixed(2)}" y="${padT}" width="${rectW.toFixed(2)}" height="${usableH.toFixed(2)}" fill="transparent">
+                <title>${point.date || `Obs ${index + 1}`}\nError: ${point.error.toFixed(2)}</title>
+            </rect>
+        `;
+    }).join("");
+
+    container.innerHTML = `
+        <svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Curva de exactitud Monte Carlo (residuales)">
+            ${grid}
+            <line x1="${padL}" y1="${height - padB}" x2="${width - padR}" y2="${height - padB}" stroke="#64748b" stroke-width="1.2"></line>
+            ${hoverRects}
+            <line x1="${padL}" y1="${zeroY.toFixed(2)}" x2="${width - padR}" y2="${zeroY.toFixed(2)}" stroke="#0f172a" stroke-width="1.4" stroke-dasharray="4 4"></line>
+            <line x1="${padL}" y1="${meanY.toFixed(2)}" x2="${width - padR}" y2="${meanY.toFixed(2)}" stroke="#b45309" stroke-width="1.4" stroke-dasharray="6 4"></line>
+            <polyline points="${polyline}" fill="none" stroke="#0f766e" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"></polyline>
+            ${chartPoints.map(point => `
+                <circle cx="${point.x.toFixed(2)}" cy="${point.y.toFixed(2)}" r="3.6" fill="#0f766e">
+                    <title>${point.date || ""} | Error: ${point.error.toFixed(2)}</title>
+                </circle>
+            `).join("")}
+            ${chartPoints.map((point, index) => {
+                const interval = Math.max(1, Math.ceil(chartPoints.length / 8));
+                if (index % interval !== 0 && index !== chartPoints.length - 1) return "";
+                return `<text x="${point.x.toFixed(2)}" y="${height - 26}" fill="#64748b" font-size="9" text-anchor="middle">${point.date || `Obs ${index + 1}`}</text>`;
+            }).join("")}
+            <text x="${padL + 6}" y="${(zeroY - 6).toFixed(2)}" fill="#0f172a" font-size="10">Cero (sin sesgo)</text>
+            <text x="${padL + 6}" y="${(meanY - 6).toFixed(2)}" fill="#b45309" font-size="10">Media error</text>
+            <text x="${(width / 2)}" y="${height - 3}" fill="#475569" font-size="11" font-weight="bold">Observaciones de backtest</text>
+            <text x="8" y="${padT + 10}" fill="#475569" font-size="11" font-weight="bold" transform="rotate(-90 8 ${padT + 10})">Error (COP)</text>
+        </svg>
+    `;
+
+    if (detailEl) {
+        const mae = mcMetrics.mae !== undefined && mcMetrics.mae !== null ? formatTrm(Number(mcMetrics.mae)) : "-";
+        const rmse = mcMetrics.rmse !== undefined && mcMetrics.rmse !== null ? formatTrm(Number(mcMetrics.rmse)) : "-";
+        const r2 = mcMetrics.r2 !== undefined && mcMetrics.r2 !== null ? Number(mcMetrics.r2).toFixed(4) : "-";
+        const coverage = mcMetrics.coverage_90_pct !== undefined && mcMetrics.coverage_90_pct !== null
+            ? `${Number(mcMetrics.coverage_90_pct).toFixed(2)}%`
+            : "-";
+        detailEl.innerText = `Sesgo medio: ${meanError.toFixed(2)} · MAE: ${mae} · RMSE: ${rmse} · R2: ${r2} · Cobertura 90%: ${coverage}`;
+    }
+}
+
+function buildMonteCarloBacktestFallback(rfTestSeries = [], mcHistorical = {}) {
+    if (!Array.isArray(rfTestSeries) || rfTestSeries.length < 2) return [];
+
+    const meanChange = Number(mcHistorical?.mean_change ?? 0);
+    const fallbackSeries = [];
+
+    for (let i = 1; i < rfTestSeries.length; i += 1) {
+        const prevActual = Number(rfTestSeries[i - 1]?.actual);
+        const currentActual = Number(rfTestSeries[i]?.actual);
+        if (!Number.isFinite(prevActual) || !Number.isFinite(currentActual)) continue;
+
+        const predicted = prevActual + meanChange;
+        fallbackSeries.push({
+            date: rfTestSeries[i]?.date,
+            actual: currentActual,
+            predicted,
+            error: currentActual - predicted,
+        });
+    }
+
+    return fallbackSeries;
+}
+
 function renderFeatureImportance(containerId, featureImportance) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -355,6 +578,53 @@ function renderFeatureImportance(containerId, featureImportance) {
             </div>
         </div>
     `).join("");
+}
+
+function renderPredictionAccuracyTable(rf = {}, mc = {}) {
+    const tableBody = document.getElementById("predictionAccuracyTableBody");
+    const detail = document.getElementById("predictionAccuracyTableDetail");
+    if (!tableBody) return;
+
+    const rfMetrics = rf.metrics || {};
+    const mcMetrics = mc.metrics || {};
+
+    const formatMetric = value => {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
+        return formatTrm(Number(value));
+    };
+
+    const formatR2 = value => {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
+        return Number(value).toFixed(4);
+    };
+
+    const formatCoverage = value => {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
+        return `${Number(value).toFixed(2)}%`;
+    };
+
+    tableBody.innerHTML = `
+        <tr>
+            <td>Random Forest</td>
+            <td>${formatMetric(rfMetrics.mae)}</td>
+            <td>${formatMetric(rfMetrics.rmse)}</td>
+            <td>${formatR2(rfMetrics.r2)}</td>
+            <td>-</td>
+            <td>${Array.isArray(rf.test_series) ? rf.test_series.length : "-"}</td>
+        </tr>
+        <tr>
+            <td>Monte Carlo</td>
+            <td>${formatMetric(mcMetrics.mae)}</td>
+            <td>${formatMetric(mcMetrics.rmse)}</td>
+            <td>${formatR2(mcMetrics.r2)}</td>
+            <td>${formatCoverage(mcMetrics.coverage_90_pct)}</td>
+            <td>${mcMetrics.sample_size ?? "-"}</td>
+        </tr>
+    `;
+
+    if (detail) {
+        detail.innerText = "Nota: RF usa backtest supervisado; Monte Carlo usa backtest de deriva diaria esperada con banda probabilística del 90%.";
+    }
 }
 
 function normalizePredictionScopes(data) {
@@ -409,6 +679,8 @@ function renderPredictionScope(scopeData, mlflow) {
     const mcProjection = Number(comparison.mc_projection ?? mc?.projection_next_month ?? 0);
     const rfNextDayProjection = Number(rfForecastData?.next_day_projection ?? 0);
     const mcNextDayProjection = Number(mc?.projection_next_day ?? 0);
+    const rfR2 = Number(rf?.metrics?.r2 ?? 0);
+    const rfAccuracyPct = Math.max(0, Math.min(rfR2, 1)) * 100;
     const rfNextDayDate = rfForecastData?.next_day_date || "-";
     const mcNextDayDate = mc?.next_day_date || rfNextDayDate;
     const todayTrm = Number(mc?.historical?.latest_value ?? historySeries[historySeries.length - 1]?.avg ?? 0);
@@ -433,6 +705,10 @@ function renderPredictionScope(scopeData, mlflow) {
     const rfDetail = document.getElementById("predictionRfDetail");
     const mcDetail = document.getElementById("predictionMonteCarloDetail");
 
+    const mcBacktestSeries = (Array.isArray(mc.backtest_series) && mc.backtest_series.length)
+        ? mc.backtest_series
+        : buildMonteCarloBacktestFallback(rf.test_series || [], mc.historical || {});
+
     if (kpis) {
         kpis.innerHTML = `
             <div class="stat-item"><span class="stat-label">TRM hoy (${todayDate})</span><strong class="stat-value">${formatTrm(todayTrm)}</strong></div>
@@ -442,6 +718,7 @@ function renderPredictionScope(scopeData, mlflow) {
             <div class="stat-item"><span class="stat-label">MC día siguiente (${mcNextDayDate})</span><strong class="stat-value">${formatTrm(mcNextDayProjection)}</strong></div>
             <div class="stat-item"><span class="stat-label">Gap entre modelos</span><strong class="stat-value">${formatTrm(comparison.gap ?? 0)}</strong></div>
             <div class="stat-item"><span class="stat-label">Alineación</span><strong class="stat-value">${(Number(comparison.alignment_score || 0)).toFixed(1)}%</strong></div>
+            <div class="stat-item"><span class="stat-label">Exactitud RF (R²)</span><strong class="stat-value">${rfAccuracyPct.toFixed(2)}%</strong></div>
         `;
     }
 
@@ -460,7 +737,10 @@ function renderPredictionScope(scopeData, mlflow) {
     if (mcDetail) {
         const hist = mc.historical || {};
         const pct = mc.percentiles || {};
-        mcDetail.innerText = `Media cambios ${formatTrm(hist.mean_change)} · Desv. cambios ${formatTrm(hist.std_change)} · P05 ${formatTrm(pct.p05)} · P95 ${formatTrm(pct.p95)}`;
+        const metrics = mc.metrics || {};
+        const mcRmse = metrics.rmse === undefined || metrics.rmse === null ? "-" : formatTrm(metrics.rmse);
+        const mcR2 = metrics.r2 === undefined || metrics.r2 === null ? "-" : Number(metrics.r2).toFixed(4);
+        mcDetail.innerText = `Media cambios ${formatTrm(hist.mean_change)} · Desv. cambios ${formatTrm(hist.std_change)} · P05 ${formatTrm(pct.p05)} · P95 ${formatTrm(pct.p95)} · RMSE ${mcRmse} · R2 ${mcR2}`;
     }
 
     if (narrative) {
@@ -468,6 +748,10 @@ function renderPredictionScope(scopeData, mlflow) {
     }
 
     renderBacktestChart("predictionRfChart", rf.test_series || []);
+    // Residuals / accuracy histogram
+    renderResidualsHistogram("predictionResidualsChart", rf.test_series || [], rf.metrics || {});
+    renderMonteCarloResidualsCurve("predictionMonteCarloResidualsChart", mcBacktestSeries, mc.metrics || {});
+    renderPredictionAccuracyTable(rf, mc);
     renderFeatureImportance("predictionFeatureImportance", rf.feature_importance || {});
     renderMonteCarloHistogram("predictionMonteCarloChart", mc.scenarios || [], rfForecast, mcProjection, mc.percentiles || {});
     renderForecastComparisonChart("predictionComparisonChart", historySeries, rfForecast, mcProjection);
